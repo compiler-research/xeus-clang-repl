@@ -1,0 +1,15 @@
+{
+  "display_name": "C++14",
+  "argv": [
+      "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
+      "-f",
+      "{connection_file}",
+      "-std=c++14",
+      "-fno-exceptions",
+      "-fopenmp=libiomp5",
+      "-I/usr/lib/gcc/x86_64-linux-gnu/10", 
+      "-O2",
+      "-v"
+  ],
+  "language": "C++14"
+}
