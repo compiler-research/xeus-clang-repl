@@ -2,6 +2,7 @@ name: xeus-clang-repl
 channels:
   - conda-forge
 dependencies:
+  - clangdev
   - xeus
   - xtensor
   - xtensor-blas
