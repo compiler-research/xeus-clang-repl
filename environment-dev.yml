@@ -1,0 +1,19 @@
+name: xeus-clang-repl
+channels:
+  - conda-forge
+dependencies:
+  # Build dependencies
+  - cmake
+  # Host dependencies
+  - xeus=2.0.0
+  #- cling=0.8
+  - clangdev=14
+  - llvmdev=14
+  - nlohmann_json=3.9.1
+  - cppzmq
+  - xtl=0.7.2
+  - pugixml
+  - cxxopts=2.1.2
+  # Test dependencies
+  - pytest
+  - jupyter_kernel_test
