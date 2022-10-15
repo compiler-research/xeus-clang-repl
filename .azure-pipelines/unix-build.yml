@@ -6,7 +6,7 @@ steps:
   - script: |
       conda config --set always_yes yes --set changeps1 no
       conda update -q conda
-      conda env create --file environment-dev.yml
+      conda env create --file environment.yml
     displayName: Install dependencies
 
   - script: |
