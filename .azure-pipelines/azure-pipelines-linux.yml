@@ -3,7 +3,7 @@ jobs:
     strategy:
       matrix:
         gcc_7:
-          image_name: 'ubuntu-22.04'
+          image_name: 'ubuntu-18.04'
     pool:
       vmImage: $(image_name)
     timeoutInMinutes: 30
