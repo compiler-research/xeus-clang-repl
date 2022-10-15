@@ -14,6 +14,7 @@ dependencies:
   - xtl
   - pugixml
   - cxxopts
+  - libuuid
   # Test dependencies
   - pytest
   - jupyter_kernel_test
