@@ -3,17 +3,17 @@ channels:
   - conda-forge
 dependencies:
   # Build dependencies
-  - clangdev
+  - clangdev>=15
   - cmake
   # Host dependencies
-  - xeus
+  - xeus>=2.0,<3.0
   - xtensor
   - xtensor-blas
-  - nlohmann_json
-  - cppzmq
-  - xtl
+  - nlohmann_json>=3.9.1,<3.10
+  - cppzmq>=4.6.0,<5
+  - xtl>=0.7,<0.8
   - pugixml
-  - cxxopts
+  - cxxopts>=2.1.1,<2.2
   - libuuid
   # Test dependencies
   - pytest
