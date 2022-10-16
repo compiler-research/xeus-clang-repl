@@ -120,7 +120,7 @@ set(XEUS_CLANG_REPL_SRC
     src/xinterpreter.cpp
     src/xoptions.cpp
     src/xparser.cpp
-    src/xholder_clang_repl.cpp
+    src/xholder_clang-repl.cpp
     src/xmagics/os.cpp
     src/xmagics/os.hpp
     src/xmagics/pythonexec.cpp
@@ -302,10 +302,10 @@ if(MSVC)
 
     # List to '/EXPORT:sym0 /EXPORT:sym1 /EXPORT:sym2 ...'
     foreach(sym ${clang_repl_exports})
-        set(clang_link_str "${clang_link_str} /EXPORT:${sym}")
+        set(clang_repl_link_str "${clang_repl_link_str} /EXPORT:${sym}")
     endforeach(sym ${clang_repl_exports})
 
-    set_property(TARGET xeus-clang-repl APPEND_STRING PROPERTY LINK_FLAGS ${clang_link_str})
+    set_property(TARGET xeus-clang-repl APPEND_STRING PROPERTY LINK_FLAGS ${clang_repl_link_str})
 endif(MSVC)
 
 #########
