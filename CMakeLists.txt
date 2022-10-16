@@ -63,6 +63,7 @@ find_package(LLVM "15" REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}")
 find_package(Clang REQUIRED CONFIG PATHS "${LLVM_BINARY_DIR}/lib/cmake/clang/" "${LLVM_CONFIG_EXTRA_PATH_HINTS}/lib/cmake/clang/" NO_DEFAULT_PATH)
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIR})
+include(AddLLVM)
 
 add_definitions(-DCLANG_RESOURCE_DIR="${LLVM_BINARY_DIR}/lib/clang/${LLVM_PACKAGE_VERSION}")
 
