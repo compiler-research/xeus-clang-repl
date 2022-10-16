@@ -46,12 +46,14 @@ static PyObject *gMainDict = 0;
 
 void UpdatePythonDictVariableVector(const char *name, std::vector<int> &data) {
   PyObject* listObj = PyList_New(data.size());
-	if (!listObj) throw std::logic_error("Unable to allocate memory for Python list");
+	//TODO: Fix exception throw
+	//if (!listObj) throw std::logic_error("Unable to allocate memory for Python list");
 	for (unsigned int i = 0; i < data.size(); i++) {
 		PyObject *num = PyLong_FromLong((int)data[i]);
 		if (!num) {
 			Py_DECREF(listObj);
-			throw std::logic_error("Unable to allocate memory for Python list");
+			//TODO: Fix exception throw
+			//throw std::logic_error("Unable to allocate memory for Python list");
 		}
 		PyList_SET_ITEM(listObj, i, num);
 	}
