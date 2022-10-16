@@ -15,9 +15,9 @@
 
 #include <dirent.h>
 
-#include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/Value.h"
-#include "cling/Utils/Output.h"
+#include "clang/Interpreter/Interpreter.h"
+#include "clang/Interpreter/Value.h"
+#include "clang/Utils/Output.h"
 
 #include "pugixml.hpp"
 
@@ -83,7 +83,8 @@ namespace xcpp
         }
     };
 
-    std::string find_type(const std::string& expression, cling::Interpreter& interpreter)
+    std::string find_type(const std::string& expression, 
+                          ::Interpreter& interpreter)
     {
         cling::Value result;
         std::string typeString;
