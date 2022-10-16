@@ -1,4 +1,4 @@
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/alexander-penev/xeus-clang-repl/HEAD?labpath=index.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/alexander-penev/xeus-clang-repl/HEAD?labpath=notebooks/index.ipynb)
 
 ## Installation
 
@@ -9,7 +9,7 @@
 ## Trying it online
 
 To try out xeus-cling interactively in your web browser, just click on the binder
-link: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/alexander-penev/xeus-clang-repl/HEAD?labpath=index.ipynb)
+link: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/alexander-penev/xeus-clang-repl/HEAD?labpath=notebooks/index.ipynb)
 
 ## Usage
 
