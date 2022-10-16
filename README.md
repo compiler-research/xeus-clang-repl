@@ -1,6 +1,4 @@
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/alexander-penev/xeus-clang-repl/HEAD?labpath=notebooks%2Fdefault.ipynb)
-
-`xeus-clang-repl` is a Jupyter kernel for C++, a follow-up on `xeus-cling`[https://github.com/jupyter-xeus/xeus-cling].
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/alexander-penev/xeus-clang-repl/HEAD?labpath=index.ipynb)
 
 ## Installation
 
