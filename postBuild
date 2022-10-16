@@ -1,5 +1,6 @@
 #!/bin/bash
-echo "Prefix: $CONDA_PREFIX}"
+echo "ENV:"
+export
 mkdir build
 cd build
 cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DDOWNLOAD_GTEST=ON -DCMAKE_INSTALL_LIBDIR=lib ..
