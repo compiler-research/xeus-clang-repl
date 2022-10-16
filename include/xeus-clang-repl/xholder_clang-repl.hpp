@@ -8,9 +8,7 @@
 ************************************************************************************/
 
 #ifndef XCPP_HOLDER_CLANG_REPL_HPP
-#define XCPP_HOLDER_CLANG_REPL
-
-_HPP
+#define XCPP_HOLDER_CLANG_REPL_HPP
 
 #include <regex>
 
