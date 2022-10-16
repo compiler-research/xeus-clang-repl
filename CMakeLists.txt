@@ -74,6 +74,7 @@ find_package(PythonLibs REQUIRED)
 # flags #
 #########
 
+include(HandleLLVMOptions)
 include(CheckCXXCompilerFlag)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
