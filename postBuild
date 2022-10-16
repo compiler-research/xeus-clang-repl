@@ -1,8 +1,5 @@
 #!/bin/bash
 mkdir build
 cd build
-update-alternatives --install "/usr/bin/ld" "ld" "/usr/bin/ld.gold" 20
-update-alternatives --install "/usr/bin/ld" "ld" "/usr/bin/ld.bfd" 10
-update-alternatives --config ld
-cmake -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib ..
+cmake -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold ..
 make install -j2
