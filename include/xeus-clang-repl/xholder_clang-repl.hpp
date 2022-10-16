@@ -7,8 +7,10 @@
 * The full license is in the file LICENSE, distributed with this software.         *
 ************************************************************************************/
 
-#ifndef XCPP_HOLDER_CLING_HPP
-#define XCPP_HOLDER_CLING_HPP
+#ifndef XCPP_HOLDER_CLANG_REPL_HPP
+#define XCPP_HOLDER_CLANG_REPL
+
+_HPP
 
 #include <regex>
 
