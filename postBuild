@@ -1,7 +1,7 @@
 #!/bin/bash
-echo "ENV:"
-export
-mkdir build
-cd build
-cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DDOWNLOAD_GTEST=ON -DCMAKE_INSTALL_LIBDIR=lib ..
-make install -j2
+#echo "ENV:"
+#export
+#mkdir build
+#cd build
+#cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DDOWNLOAD_GTEST=ON -DCMAKE_INSTALL_LIBDIR=lib ..
+#make install -j2
