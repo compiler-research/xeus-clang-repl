@@ -152,7 +152,7 @@ set(XCPP_HEADERS
 )
 
 # xeus-clang-repl is the target for the library
-add_llvm_library(xeus-clang-repl SHARED ${XEUS_CLANG_REPL_SRC} ${XEUS_CLANG_REPL_HEADERS})
+llvm_add_library(xeus-clang-repl SHARED ${XEUS_CLANG_REPL_SRC} ${XEUS_CLANG_REPL_HEADERS})
 
 # xcpp is the target for the kernel executable
 add_executable(xcpp ${XCPP_SRC})
