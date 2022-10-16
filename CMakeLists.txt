@@ -105,7 +105,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
     endif()
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
 
 ###################
 # Target and link #
@@ -155,6 +155,7 @@ set(XCPP_HEADERS
 )
 
 # xeus-clang-repl is the target for the library
+set(LLVM_REQUIRES_EH ON)
 llvm_add_library(xeus-clang-repl SHARED ${XEUS_CLANG_REPL_SRC} ${XEUS_CLANG_REPL_HEADERS})
 
 # xcpp is the target for the kernel executable
