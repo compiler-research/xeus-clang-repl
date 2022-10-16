@@ -13,20 +13,20 @@
 #include <string>
 #include <vector>
 
-#include "cling/Interpreter/Value.h"
-#include "cling/Interpreter/Exception.h"
-#include "cling/Interpreter/Interpreter.h"
-#include "cling/Utils/Output.h"
+#include "clang/Interpreter/Value.h"
+#include "clang/Interpreter/Exception.h"
+#include "clang/Interpreter/Interpreter.h"
+#include "clang/Utils/Output.h"
 
 #include "execution.hpp"
 #include "../xparser.hpp"
 
 namespace xcpp
 {
-    timeit::timeit(cling::Interpreter* p)
+    timeit::timeit(clang::Interpreter* p)
         : m_interpreter(p)
     {
-        cling::Interpreter::CompilationResult compilation_result;
+        clang::Interpreter::CompilationResult compilation_result;
         compilation_result = m_interpreter->process("#include <chrono>");
         std::string init_timeit = "auto _t0 = std::chrono::high_resolution_clock::now();\n";
         init_timeit += "auto _t1 = std::chrono::high_resolution_clock::now();\n";
@@ -111,8 +111,8 @@ namespace xcpp
         auto errorlevel = 0;
         std::string ename;
         std::string evalue;
-        cling::Value output;
-        cling::Interpreter::CompilationResult compilation_result = cling::Interpreter::kSuccess;
+        clang::Value output;
+        clang::Interpreter::CompilationResult compilation_result = clang::Interpreter::kSuccess;
 
         try
         {
@@ -152,7 +152,7 @@ namespace xcpp
             std::cout << number << " loop" << ((number == 1) ? "" : "s") << " each)" << std::endl;
         }
         // Catch all errors
-        catch (cling::InterpreterException& e)
+        catch (clang::InterpreterException& e)
         {
             errorlevel = 1;
             ename = "Interpreter Exception";
@@ -173,7 +173,7 @@ namespace xcpp
             ename = "Error";
         }
 
-        if (compilation_result != cling::Interpreter::kSuccess)
+        if (compilation_result != clang::Interpreter::kSuccess)
         {
             errorlevel = 1;
             ename = "Interpreter Error";

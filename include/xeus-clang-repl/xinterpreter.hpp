@@ -7,8 +7,8 @@
 * The full license is in the file LICENSE, distributed with this software.         *
 ************************************************************************************/
 
-#ifndef XEUS_CLING_INTERPRETER_HPP
-#define XEUS_CLING_INTERPRETER_HPP
+#ifndef XEUS_CLANG_REPL_INTERPRETER_HPP
+#define XEUS_CLANG_REPL_INTERPRETER_HPP
 
 #include <streambuf>
 #include <string>
@@ -27,7 +27,7 @@ namespace nl = nlohmann;
 
 namespace xcpp
 {
-    class XEUS_CLING_API interpreter : public xeus::xinterpreter
+    class XEUS_CLANG_REPL_API interpreter : public xeus::xinterpreter
     {
     public:
 

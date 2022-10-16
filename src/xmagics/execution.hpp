@@ -13,7 +13,7 @@
 #include <cstddef>
 #include <string>
 
-#include "cling/Interpreter/Interpreter.h"
+#include "clang/Interpreter/Interpreter.h"
 
 #include "xeus-clang-repl/xmagics.hpp"
 #include "xeus-clang-repl/xoptions.hpp"
@@ -24,7 +24,7 @@ namespace xcpp
     {
     public:
 
-        timeit(cling::Interpreter* p);
+        timeit(clang::Interpreter* p);
 
         virtual void operator()(const std::string& line) override
         {
@@ -42,7 +42,7 @@ namespace xcpp
 
     private:
 
-        cling::Interpreter* m_interpreter;
+        clang::Interpreter* m_interpreter;
 
         xoptions get_options();
         std::string inner(std::size_t number, const std::string& code) const;

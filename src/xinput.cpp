@@ -20,7 +20,7 @@ namespace xcpp
 {
     void notimplemented(const std::string&)
     {
-        throw std::runtime_error("This frontend does not support input requests");
+	throw std::runtime_error("This frontend does not support input requests");
     }
 
     /***************************************

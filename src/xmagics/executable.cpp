@@ -64,7 +64,7 @@ namespace xcpp
         // Generate a unique fn that is not unloaded after generating the
         // executable. This is necessary for templates like std::endl to
         // work correctly in subsequent cells.
-        std::string fn_name = "__xeus_cling_main_wrapper_";
+        std::string fn_name = "__xeus_clang_repl_main_wrapper_";
         fn_name += std::to_string(m_unique++);
         unique_fn = "int " + fn_name + "() {\n";
         unique_fn += cell + "\n";
@@ -78,7 +78,7 @@ namespace xcpp
         // Define the function that is called for checking any pointer used
         // as a member base or passed to a function call. This avoids pulling
         // in the full libcling.so which is not needed.
-        main += "void *cling_runtime_internal_throwIfInvalidPointer(\n";
+        main += "void *clang_repl_runtime_internal_throwIfInvalidPointer(\n";
         main += "    void *, void *, const void *Arg) {\n";
         main += "  return const_cast<void*>(Arg);\n";
         main += "}";
@@ -95,10 +95,10 @@ namespace xcpp
 
         bool VisitFunctionDecl(clang::FunctionDecl* D)
         {
-            // Filter out functions added by Cling.
+            // Filter out functions added by Clang_repl.
             if (auto Identifier = D->getIdentifier())
             {
-                if (Identifier->getName().startswith("__cling"))
+                if (Identifier->getName().startswith("__clang_repl"))
                 {
                     return true;
                 }
