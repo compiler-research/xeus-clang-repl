@@ -16,16 +16,16 @@
 
 #include "nlohmann/json.hpp"
 
-#include "cling/Interpreter/Exception.h"
-#include "cling/Interpreter/CValuePrinter.h"
-#include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/InterpreterCallbacks.h"
-#include "cling/Interpreter/LookupHelper.h"
-#include "cling/Interpreter/Transaction.h"
-#include "cling/Interpreter/Value.h"
-#include "cling/Utils/AST.h"
-#include "cling/Utils/Output.h"
-#include "cling/Utils/Validation.h"
+#include "clang/Interpreter/Exception.h"
+#include "clang/Interpreter/CValuePrinter.h"
+#include "clang/Interpreter/Interpreter.h"
+#include "clang/Interpreter/InterpreterCallbacks.h"
+#include "clang/Interpreter/LookupHelper.h"
+#include "clang/Interpreter/Transaction.h"
+#include "clang/Interpreter/Value.h"
+#include "clang/Utils/AST.h"
+#include "clang/Utils/Output.h"
+#include "clang/Utils/Validation.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -44,21 +44,21 @@ namespace xcpp
 {
 
     /**************************************************************************
-    * The content of the cling_detail namespace is derived from cling which   *
-    * licensed under the UI/NCSAOSL license.                                  *
+    * The content of the clang_repl_detail namespace is derived from          *
+    * clang_repl which licensed under the UI/NCSAOSL license.                 *
     ***************************************************************************/
 
-    namespace cling_detail
+    namespace clang_repl_detail
     {
         struct LockCompilationDuringUserCodeExecutionRAII
         {
             /// Callbacks used to un/lock.
-            cling::InterpreterCallbacks* fCallbacks;
+            clang::InterpreterCallbacks* fCallbacks;
 
             /// Info provided to UnlockCompilationDuringUserCodeExecution().
             void* fStateInfo = nullptr;
 
-            LockCompilationDuringUserCodeExecutionRAII(cling::InterpreterCallbacks* callbacks)
+            LockCompilationDuringUserCodeExecutionRAII(clang::InterpreterCallbacks* callbacks)
                 : fCallbacks(callbacks)
             {
                 if (fCallbacks)
@@ -67,7 +67,7 @@ namespace xcpp
                 }
             }
 
-            LockCompilationDuringUserCodeExecutionRAII(cling::Interpreter& interp)
+            LockCompilationDuringUserCodeExecutionRAII(clang::Interpreter& interp)
                 : LockCompilationDuringUserCodeExecutionRAII(interp.getCallbacks())
             {
             }
@@ -86,7 +86,7 @@ namespace xcpp
             bool savedAccessControl;
             clang::LangOptions& LangOpts;
 
-            AccessCtrlRAII_t(cling::Interpreter &Interp)
+            AccessCtrlRAII_t(clang::Interpreter &Interp)
               : LangOpts(const_cast<clang::LangOptions &>(Interp.getCI()->getLangOpts()))
             {
                 savedAccessControl = LangOpts.AccessControl;
@@ -111,7 +111,7 @@ namespace xcpp
                                    const char* Begin = "(", const char* End = "*)",
                                    std::size_t Hint = 3)
         {
-            return enclose(cling::utils::TypeName::GetFullyQualifiedName(Ty, C), Begin, End, Hint);
+            return enclose(clang::utils::TypeName::GetFullyQualifiedName(Ty, C), Begin, End, Hint);
         }
 
         static clang::QualType getElementTypeAndExtent(const clang::ConstantArrayType* CArrTy, std::string& extent)
@@ -126,7 +126,7 @@ namespace xcpp
             return ElementTy;
         }
 
-        static std::string getTypeString(const cling::Value& V)
+        static std::string getTypeString(const clang::Value& V)
         {
             clang::ASTContext& C = V.getASTContext();
             clang::QualType Ty = V.getType().getDesugaredType(C).getNonReferenceType();
@@ -170,11 +170,11 @@ namespace xcpp
         }
     }
 
-    inline nl::json mime_repr(const cling::Value& V)
+    inline nl::json mime_repr(const clang::Value& V)
     {
         // Return a JSON mime bundle representing the specified value.
 
-        cling::Interpreter *interpreter = V.getInterpreter();
+        clang::Interpreter *interpreter = V.getInterpreter();
         const void* value = V.getPtr();
 
         // Include "xmime.hpp" only on the first time a variable is displayed.
@@ -182,23 +182,23 @@ namespace xcpp
 
         if (!xmime_included)
         {
-            cling_detail::LockCompilationDuringUserCodeExecutionRAII LCDUCER(*interpreter);
+            clang_repl_detail::LockCompilationDuringUserCodeExecutionRAII LCDUCER(*interpreter);
             interpreter->declare("#include \"xcpp/xmime.hpp\"");
             xmime_included = true;
         }
 
-        cling::Value mimeReprV;
+        clang::Value mimeReprV;
         {
             // Use an llvm::raw_ostream to prepend '0x' in front of the pointer value.
-            cling::ostrstream code;
+            clang::ostrstream code;
             code << "using xcpp::mime_bundle_repr;";
             code << "mime_bundle_repr(";
-            code << "*(" << xcpp::cling_detail::getTypeString(V);
+            code << "*(" << xcpp::clang_repl_detail::getTypeString(V);
             code << &value;
             code << "));";
 
-            cling_detail::AccessCtrlRAII_t AccessCtrlRAII(*interpreter);
-            cling_detail::LockCompilationDuringUserCodeExecutionRAII LCDUCER(*interpreter);
+            clang_repl_detail::AccessCtrlRAII_t AccessCtrlRAII(*interpreter);
+            clang_repl_detail::LockCompilationDuringUserCodeExecutionRAII LCDUCER(*interpreter);
             interpreter->process(code.str(), &mimeReprV);
         }
 
