@@ -12,7 +12,7 @@
 
 // Project version
 #define XEUS_CLANG_REPL_VERSION_MAJOR 0
-#define XEUS_CLANG_REPL_VERSION_MINOR 13
+#define XEUS_CLANG_REPL_VERSION_MINOR 1
 #define XEUS_CLANG_REPL_VERSION_PATCH 0
 
 // Composing the version string from major, minor and patch
