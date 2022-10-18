@@ -1,4 +1,23 @@
 #!/bin/bash
+
+# Build, cache and install Clang-dev
+mkdir clang-dev
+cd clang-dev
+git clone --depth=1 https://github.com/llvm/llvm-project.git
+#https://github.com/llvm/llvm-project/archive/refs/heads/main.zip
+#patch
+cd llvm-project
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS=clang ../llvm
+make clang-repl -j2
+clangbuild=`pwd`
+export PATH=$clangbuild/bin:$PATH
+export LD_LIBRARY_PATH=$clangbuild/lib:$LD_LIBRARY_PATH
+cd ../../..
+exit 0
+
+# Build and Install xeus-clang-repl
 mkdir build
 cd build
 cmake -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_USE_LINKER=gold ..
