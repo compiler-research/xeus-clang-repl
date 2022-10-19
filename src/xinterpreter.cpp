@@ -18,6 +18,7 @@
 
 #include "Python.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/Support/TargetSelect.h"
@@ -42,6 +43,10 @@
 
 using namespace std::placeholders;
 static PyObject *gMainDict = 0;
+std::string DiagnosticOutput;
+llvm::raw_string_ostream DiagnosticsOS(DiagnosticOutput);
+auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
+    DiagnosticsOS, new clang::DiagnosticOptions());
 
 
 void UpdatePythonDictVariableVector(const char *name, std::vector<int> &data) {
@@ -86,15 +91,8 @@ void ExecSimpleCommand(const std::string code) {
 
 
 ///\returns true on error.
-static bool ProcessCode(clang::Interpreter& Interp, const std::string& code, std::string& err) {
-//   if (auto Err = Interp.ParseAndExecute(code)) {
-//     llvm::raw_string_ostream stream(err);
-//     llvm::logAllUnhandledErrors(std::move(Err), stream, "error: ");
-//     stream.flush();
-//     return true;
-//   }
-//   return false; // success
-
+static bool ProcessCode(clang::Interpreter& Interp, const std::string& code,
+                         llvm::raw_string_ostream& error_stream) {
     Py_Initialize();
     gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
     Py_INCREF(gMainDict);
@@ -144,21 +142,22 @@ static bool ProcessCode(clang::Interpreter& Interp, const std::string& code, std
     else {
         auto PTU = Interp.Parse(code);
         if (!PTU) {
-            llvm::raw_string_ostream stream(err);
             auto Err = PTU.takeError();
-            llvm::logAllUnhandledErrors(std::move(Err), stream, "error: "); 
-            stream.flush();
+            error_stream << DiagnosticsOS.str();
+            // avoid printing the "Parsing failed error"
+            // llvm::logAllUnhandledErrors(std::move(Err), error_stream, "error: ");
             return true;
         }
         if (PTU->TheModule) {
             llvm::Error ex = Interp.Execute(*PTU);
+            error_stream << DiagnosticsOS.str();
             if (code.substr(0,3) == "int") {
                 for (clang::Decl* D : PTU->TUPart->decls()) {
                     if (clang::VarDecl* VD = llvm::dyn_cast<clang::VarDecl>(D)) {
                         auto Name = VD->getNameAsString();
                         auto Addr = Interp.getSymbolAddress(clang::GlobalDecl(VD));
                         if (!Addr) {
-                            llvm::logAllUnhandledErrors(std::move(Addr.takeError()), llvm::errs(), "error: "); 
+                            llvm::logAllUnhandledErrors(std::move(Addr.takeError()), error_stream, "error: "); 
                             return true;
                         }
                         void * AddrVP = (void*)*Addr;
@@ -174,7 +173,7 @@ static bool ProcessCode(clang::Interpreter& Interp, const std::string& code, std
                         auto Name = VD->getNameAsString();
                         auto Addr = Interp.getSymbolAddress(clang::GlobalDecl(VD));
                         if (!Addr) {
-                            llvm::logAllUnhandledErrors(std::move(Addr.takeError()), llvm::errs(), "error: "); 
+                            llvm::logAllUnhandledErrors(std::move(Addr.takeError()), error_stream, "error: "); 
                             return true;
                         }
                         void * AddrVP = (void*)*Addr;
@@ -183,7 +182,7 @@ static bool ProcessCode(clang::Interpreter& Interp, const std::string& code, std
                 }
             }
 
-            llvm::logAllUnhandledErrors(std::move(ex), llvm::errs(), "error: "); 
+            llvm::logAllUnhandledErrors(std::move(ex), error_stream, "error: "); 
             return false;
         }
     }
@@ -197,7 +196,10 @@ createInterpreter(const Args &ExtraArgs = {},
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
 
-  Args ClangArgs = {"-Xclang", "-emit-llvm-only", "-xc++"};
+   Args ClangArgs = {"-Xclang", "-emit-llvm-only",
+                     "-Xclang", "-diagnostic-log-file",
+                     "-Xclang", "-",
+                     "-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
   auto CI = cantFail(clang::IncrementalCompilerBuilder::create(ClangArgs));
   if (Client)
@@ -212,7 +214,8 @@ namespace xcpp
     }
 
     interpreter::interpreter(int argc, const char* const* argv)
-      : m_interpreter(std::move(createInterpreter(Args(argv + 2, argv+argc-3)))),
+      : m_interpreter(std::move(createInterpreter(Args(argv + 2, argv + argc - 3),
+                                                     DiagPrinter.get()))),
 	  //          m_input_validator(),
           m_version(get_stdopt(argc, argv)), // Extract C++ language standard version from command-line option
           xmagics(),
@@ -220,11 +223,8 @@ namespace xcpp
           m_cout_buffer(std::bind(&interpreter::publish_stdout, this, _1)),
           m_cerr_buffer(std::bind(&interpreter::publish_stderr, this, _1))
     {
-      // Bootstrap the execution engine
-      std::string err;
-    //   ProcessCode(*m_interpreter, "int asas;", err);
-      redirect_output();
-
+        // Bootstrap the execution engine
+        redirect_output();
         init_preamble();
         init_magic();
     }
@@ -242,7 +242,7 @@ namespace xcpp
                                                bool allow_stdin)
     {
         nl::json kernel_res;
-
+        
         // Check for magics
         for (auto& pre : preamble_manager.preamble)
         {
@@ -260,8 +260,6 @@ namespace xcpp
 
         std::string ename;
         std::string evalue;
-        //cling::Value output;
-        //cling::Interpreter::CompilationResult compilation_result;
         bool compilation_result;
 
         // If silent is set to true, temporarily dismiss all std::cerr and
@@ -283,24 +281,14 @@ namespace xcpp
         for (const auto& block : blocks)
         {
             // Attempt normal evaluation
-	  std::string err;
+	          std::string error_message;
+            llvm::raw_string_ostream error_stream(error_message);
             try
             {
-	      //compilation_result = m_interpreter.process(block, &output, nullptr, true);
-	      compilation_result = ProcessCode(*m_interpreter, block, err);
-	      redirect_output();
+              compilation_result = ProcessCode(*m_interpreter, block, error_stream);
+              redirect_output();
             }
 
-            // // Catch all errors
-            // catch (cling::InterpreterException& e)
-            // {
-            //     errorlevel = 1;
-            //     ename = "Interpreter Exception";
-            //     if (!e.diagnose())
-            //     {
-            //         evalue = e.what();
-            //     }
-            // }
             catch (std::exception& e)
             {
                 errorlevel = 1;
@@ -317,12 +305,17 @@ namespace xcpp
             if (compilation_result)
             {
                 errorlevel = 1;
-                ename = "Interpreter Error [" + err + "]\n";
+                // send the errors directly to std::cerr
+                ename = "";
+                std::cerr << error_stream.str();
+
             }
 
             // If an error was encountered, don't attempt further execution
             if (errorlevel)
             {
+                error_stream.str().clear();
+                DiagnosticsOS.str().clear();
                 break;
             }
         }
@@ -347,7 +340,7 @@ namespace xcpp
             //
             // JupyterLab displays the "{ename}: {evalue}" if the traceback is
             // empty.
-            std::vector<std::string> traceback({ename + ": " + evalue});
+            std::vector<std::string> traceback({ename + " " + evalue});
             if (!silent)
             {
                 publish_execution_error(ename, evalue, traceback);
@@ -363,16 +356,17 @@ namespace xcpp
         {
             // Publish a mime bundle for the last return value if
             // the semicolon was omitted.
-	    if (!silent && /*output.hasValue() &&*/ trim(blocks.back()).back() != ';')
-            {
-                // nl::json pub_data = mime_repr(output);
-                // publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-            }
+          if (!silent && /*output.hasValue() &&*/ trim(blocks.back()).back() != ';')
+          {
+            nl::json pub_data = nl::json::object();
+            pub_data["text/plain"] = "test";
+            publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
+          }
 
-            // Compose execute_reply message.
-            kernel_res["status"] = "ok";
-            kernel_res["payload"] = nl::json::array();
-            kernel_res["user_expressions"] = nl::json::object();
+          // Compose execute_reply message.
+          kernel_res["status"] = "ok";
+          kernel_res["payload"] = nl::json::array();
+          kernel_res["user_expressions"] = nl::json::object();
         }
         return kernel_res;
     }
