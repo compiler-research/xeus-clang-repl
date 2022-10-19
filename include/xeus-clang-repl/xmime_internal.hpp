@@ -16,17 +16,6 @@
 
 #include "nlohmann/json.hpp"
 
-#include "cling/Interpreter/Exception.h"
-#include "cling/Interpreter/CValuePrinter.h"
-#include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/InterpreterCallbacks.h"
-#include "cling/Interpreter/LookupHelper.h"
-#include "cling/Interpreter/Transaction.h"
-#include "cling/Interpreter/Value.h"
-#include "cling/Utils/AST.h"
-#include "cling/Utils/Output.h"
-#include "cling/Utils/Validation.h"
-
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -48,127 +37,127 @@ namespace xcpp
     * licensed under the UI/NCSAOSL license.                                  *
     ***************************************************************************/
 
-    namespace cling_detail
-    {
-        struct LockCompilationDuringUserCodeExecutionRAII
-        {
-            /// Callbacks used to un/lock.
-            cling::InterpreterCallbacks* fCallbacks;
+    // namespace cling_detail
+    // {
+    //     struct LockCompilationDuringUserCodeExecutionRAII
+    //     {
+    //         /// Callbacks used to un/lock.
+    //         cling::InterpreterCallbacks* fCallbacks;
 
-            /// Info provided to UnlockCompilationDuringUserCodeExecution().
-            void* fStateInfo = nullptr;
+    //         /// Info provided to UnlockCompilationDuringUserCodeExecution().
+    //         void* fStateInfo = nullptr;
 
-            LockCompilationDuringUserCodeExecutionRAII(cling::InterpreterCallbacks* callbacks)
-                : fCallbacks(callbacks)
-            {
-                if (fCallbacks)
-                {
-                    fStateInfo = fCallbacks->LockCompilationDuringUserCodeExecution();
-                }
-            }
+    //         LockCompilationDuringUserCodeExecutionRAII(cling::InterpreterCallbacks* callbacks)
+    //             : fCallbacks(callbacks)
+    //         {
+    //             if (fCallbacks)
+    //             {
+    //                 fStateInfo = fCallbacks->LockCompilationDuringUserCodeExecution();
+    //             }
+    //         }
 
-            LockCompilationDuringUserCodeExecutionRAII(cling::Interpreter& interp)
-                : LockCompilationDuringUserCodeExecutionRAII(interp.getCallbacks())
-            {
-            }
+    //         LockCompilationDuringUserCodeExecutionRAII(cling::Interpreter& interp)
+    //             : LockCompilationDuringUserCodeExecutionRAII(interp.getCallbacks())
+    //         {
+    //         }
 
-            ~LockCompilationDuringUserCodeExecutionRAII()
-            {
-                if (fCallbacks)
-                {
-                    fCallbacks->UnlockCompilationDuringUserCodeExecution(fStateInfo);
-                }
-            }
-        };
+    //         ~LockCompilationDuringUserCodeExecutionRAII()
+    //         {
+    //             if (fCallbacks)
+    //             {
+    //                 fCallbacks->UnlockCompilationDuringUserCodeExecution(fStateInfo);
+    //             }
+    //         }
+    //     };
 
-        struct AccessCtrlRAII_t
-        {
-            bool savedAccessControl;
-            clang::LangOptions& LangOpts;
+    //     struct AccessCtrlRAII_t
+    //     {
+    //         bool savedAccessControl;
+    //         clang::LangOptions& LangOpts;
 
-            AccessCtrlRAII_t(cling::Interpreter &Interp)
-              : LangOpts(const_cast<clang::LangOptions &>(Interp.getCI()->getLangOpts()))
-            {
-                savedAccessControl = LangOpts.AccessControl;
-                LangOpts.AccessControl = false;
-            }
+    //         AccessCtrlRAII_t(cling::Interpreter &Interp)
+    //           : LangOpts(const_cast<clang::LangOptions &>(Interp.getCI()->getLangOpts()))
+    //         {
+    //             savedAccessControl = LangOpts.AccessControl;
+    //             LangOpts.AccessControl = false;
+    //         }
 
-            ~AccessCtrlRAII_t()
-            {
-                LangOpts.AccessControl = savedAccessControl;
-            }
-        };
+    //         ~AccessCtrlRAII_t()
+    //         {
+    //             LangOpts.AccessControl = savedAccessControl;
+    //         }
+    //     };
 
-        static std::string enclose(std::string Mid, const char* Begin, const char* End, std::size_t Hint = 0)
-        {
-            Mid.reserve(Mid.size() + Hint ? Hint : (::strlen(Begin) + ::strlen(End)));
-            Mid.insert(0, Begin);
-            Mid.append(End);
-            return Mid;
-        }
+    //     static std::string enclose(std::string Mid, const char* Begin, const char* End, std::size_t Hint = 0)
+    //     {
+    //         Mid.reserve(Mid.size() + Hint ? Hint : (::strlen(Begin) + ::strlen(End)));
+    //         Mid.insert(0, Begin);
+    //         Mid.append(End);
+    //         return Mid;
+    //     }
 
-        static std::string enclose(const clang::QualType &Ty, clang::ASTContext &C,
-                                   const char* Begin = "(", const char* End = "*)",
-                                   std::size_t Hint = 3)
-        {
-            return enclose(cling::utils::TypeName::GetFullyQualifiedName(Ty, C), Begin, End, Hint);
-        }
+    //     static std::string enclose(const clang::QualType &Ty, clang::ASTContext &C,
+    //                                const char* Begin = "(", const char* End = "*)",
+    //                                std::size_t Hint = 3)
+    //     {
+    //         return enclose(cling::utils::TypeName::GetFullyQualifiedName(Ty, C), Begin, End, Hint);
+    //     }
 
-        static clang::QualType getElementTypeAndExtent(const clang::ConstantArrayType* CArrTy, std::string& extent)
-        {
-            clang::QualType ElementTy = CArrTy->getElementType();
-            const llvm::APInt &APSize = CArrTy->getSize();
-            extent += '[' + std::to_string(APSize.getZExtValue()) + ']';
-            if (auto CArrElTy = llvm::dyn_cast<clang::ConstantArrayType>(ElementTy.getTypePtr()))
-            {
-                return getElementTypeAndExtent(CArrElTy, extent);
-            }
-            return ElementTy;
-        }
+    //     static clang::QualType getElementTypeAndExtent(const clang::ConstantArrayType* CArrTy, std::string& extent)
+    //     {
+    //         clang::QualType ElementTy = CArrTy->getElementType();
+    //         const llvm::APInt &APSize = CArrTy->getSize();
+    //         extent += '[' + std::to_string(APSize.getZExtValue()) + ']';
+    //         if (auto CArrElTy = llvm::dyn_cast<clang::ConstantArrayType>(ElementTy.getTypePtr()))
+    //         {
+    //             return getElementTypeAndExtent(CArrElTy, extent);
+    //         }
+    //         return ElementTy;
+    //     }
 
-        static std::string getTypeString(const cling::Value& V)
-        {
-            clang::ASTContext& C = V.getASTContext();
-            clang::QualType Ty = V.getType().getDesugaredType(C).getNonReferenceType();
+    //     static std::string getTypeString(const cling::Value& V)
+    //     {
+    //         clang::ASTContext& C = V.getASTContext();
+    //         clang::QualType Ty = V.getType().getDesugaredType(C).getNonReferenceType();
 
-            if (llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType()))
-            {
-                return enclose(Ty, C);
-            }
+    //         if (llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType()))
+    //         {
+    //             return enclose(Ty, C);
+    //         }
 
-            if (Ty->isPointerType())
-            {
-                // Print char pointers as strings.
-                if (Ty->getPointeeType()->isCharType())
-                {
-                    return enclose(Ty, C);
-                }
+    //         if (Ty->isPointerType())
+    //         {
+    //             // Print char pointers as strings.
+    //             if (Ty->getPointeeType()->isCharType())
+    //             {
+    //                 return enclose(Ty, C);
+    //             }
 
-                // Fallback to void pointer for other pointers and print the address.
-                return "(const void**)";
-             }
+    //             // Fallback to void pointer for other pointers and print the address.
+    //             return "(const void**)";
+    //          }
 
-            if (Ty->isArrayType())
-            {
-                if (Ty->isConstantArrayType())
-                {
-                    std::string extent("(*)");
-                    clang::QualType InnermostElTy = getElementTypeAndExtent(C.getAsConstantArrayType(Ty), extent);
-                    return enclose(InnermostElTy, C, "(", (extent + ")*(void**)").c_str());
-                }
-                return "(void**)";
-            }
-            if (Ty->isObjCObjectPointerType())
-            {
-                return "(const void**)";
-            }
+    //         if (Ty->isArrayType())
+    //         {
+    //             if (Ty->isConstantArrayType())
+    //             {
+    //                 std::string extent("(*)");
+    //                 clang::QualType InnermostElTy = getElementTypeAndExtent(C.getAsConstantArrayType(Ty), extent);
+    //                 return enclose(InnermostElTy, C, "(", (extent + ")*(void**)").c_str());
+    //             }
+    //             return "(void**)";
+    //         }
+    //         if (Ty->isObjCObjectPointerType())
+    //         {
+    //             return "(const void**)";
+    //         }
 
-            // In other cases, dereference the address of the object.
-            // If no overload or specific template matches,
-            // the general template will be used which only prints the address.
-            return enclose(Ty, C, "*(", "**)", 5);
-        }
-    }
+    //         // In other cases, dereference the address of the object.
+    //         // If no overload or specific template matches,
+    //         // the general template will be used which only prints the address.
+    //         return enclose(Ty, C, "*(", "**)", 5);
+    //     }
+    // }
 
     inline nl::json mime_repr(const cling::Value& V)
     {
