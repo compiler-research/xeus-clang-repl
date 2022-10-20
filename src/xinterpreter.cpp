@@ -31,12 +31,7 @@
 #include "xeus-clang-repl/xparser.hpp"
 #include "xeus-clang-repl/xinput.hpp"
 #include "xeus-clang-repl/xsystem.hpp"
-//#include "xeus-clang-repl/xmime_internal.hpp"
-//#include "xeus-clang-repl/xinspect.hpp"
 
-
-#include "xmagics/executable.hpp"
-//#include "xmagics/execution.hpp"
 #include "xmagics/pythonexec.hpp"
 #include "xmagics/os.hpp"
 
@@ -356,17 +351,17 @@ namespace xcpp
         {
             // Publish a mime bundle for the last return value if
             // the semicolon was omitted.
-          if (!silent && /*output.hasValue() &&*/ trim(blocks.back()).back() != ';')
-          {
-            nl::json pub_data = nl::json::object();
-            pub_data["text/plain"] = "test";
-            publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-          }
+        //   if (!silent && /*output.hasValue() &&*/ trim(blocks.back()).back() != ';')
+        //   {
+        //     nl::json pub_data = nl::json::object();
+        //     pub_data["text/plain"] = "";
+        //     publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
+        //   }
 
           // Compose execute_reply message.
-          kernel_res["status"] = "ok";
-          kernel_res["payload"] = nl::json::array();
-          kernel_res["user_expressions"] = nl::json::object();
+            kernel_res["status"] = "ok";
+            kernel_res["payload"] = nl::json::array();
+            kernel_res["user_expressions"] = nl::json::object();
         }
         return kernel_res;
     }
@@ -653,10 +648,8 @@ namespace xcpp
 
     void interpreter::init_magic()
     {
-    //   preamble_manager["magics"].get_cast<xmagics_manager>().register_magic("executable", executable(m_interpreter));
         preamble_manager["magics"].get_cast<xmagics_manager>().register_magic("file", writefile());
         preamble_manager["magics"].get_cast<xmagics_manager>().register_magic("python", pythonexec());
-      //preamble_manager["magics"].get_cast<xmagics_manager>().register_magic("timeit", timeit(&m_interpreter));
     }
 
     std::string interpreter::get_stdopt(int argc, const char* const* argv)

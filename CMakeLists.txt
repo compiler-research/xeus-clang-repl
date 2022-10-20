@@ -132,13 +132,11 @@ set(XEUS_CLANG_REPL_SRC
 set(XEUS_CLANG_REPL_HEADERS
     include/xeus-clang-repl/xinput.hpp
     include/xeus-clang-repl/xbuffer.hpp
-    include/xeus-clang-repl/xdemangle.hpp
     include/xeus-clang-repl/xeus_clang-repl_config.hpp
     include/xeus-clang-repl/xholder_clang-repl.hpp
     include/xeus-clang-repl/xinterpreter.hpp
     include/xeus-clang-repl/xmagics.hpp
     include/xeus-clang-repl/xmanager.hpp
-    include/xeus-clang-repl/xmime_internal.hpp
     include/xeus-clang-repl/xoptions.hpp
     include/xeus-clang-repl/xpreamble.hpp
     include/xeus-clang-repl/xparser.hpp
@@ -196,7 +194,6 @@ target_include_directories(xeus-clang-repl SYSTEM
                            $<BUILD_INTERFACE:${XEUS_CLANG-REPL_INCLUDE_DIR}>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(xeus-clang-repl PUBLIC clangInterpreter xeus pugixml cxxopts::cxxopts)
-#target_link_libraries(xeus-clang-repl PUBLIC clingInterpreter clingMetaProcessor clingUtils xeus pugixml cxxopts::cxxopts)
 
 target_include_directories(xeus-clang-repl PUBLIC ${PYTHON_INCLUDE_DIRS})
 target_link_libraries(xeus-clang-repl PUBLIC ${PYTHON_LIBRARIES})
