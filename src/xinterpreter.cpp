@@ -37,149 +37,66 @@
 
 
 using namespace std::placeholders;
-static PyObject *gMainDict = 0;
 std::string DiagnosticOutput;
 llvm::raw_string_ostream DiagnosticsOS(DiagnosticOutput);
 auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
     DiagnosticsOS, new clang::DiagnosticOptions());
 
 
-void UpdatePythonDictVariableVector(const char *name, std::vector<int> &data) {
-  PyObject* listObj = PyList_New(data.size());
-	if (!listObj) throw std::logic_error("Unable to allocate memory for Python list");
-	for (unsigned int i = 0; i < data.size(); i++) {
-		PyObject *num = PyLong_FromLong((int)data[i]);
-		if (!num) {
-			Py_DECREF(listObj);
-			throw std::logic_error("Unable to allocate memory for Python list");
-		}
-		PyList_SET_ITEM(listObj, i, num);
-	}
-    PyDict_SetItemString(gMainDict, name, listObj);
-}
-
-void InteractivePython() {
-   if (!Py_IsInitialized()) return;
-   PyRun_InteractiveLoop(stdin, const_cast<char *>("\0"));
-}
-
-void UpdatePythonDictVariable(const char * name, int value){
-  PyObject *s;
-  s = PyLong_FromLong(value);
-  PyDict_SetItemString(gMainDict, name, s);
-  Py_DECREF(s);
-}
-
-// check python globals 
-void CheckGlobals() {
-   if (!Py_IsInitialized()) return;
-   // execute the command
-   PyRun_SimpleString("print(globals())");
-}
-
-// execute a python comand 
-void ExecSimpleCommand(const std::string code) {
-   if (!Py_IsInitialized()) return;
-   // execute the command
-   PyRun_SimpleString(code.c_str());
-}
-
-
 ///\returns true on error.
 static bool ProcessCode(clang::Interpreter& Interp, const std::string& code,
                          llvm::raw_string_ostream& error_stream) {
-    Py_Initialize();
-    gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
-    Py_INCREF(gMainDict);
-    if (!gMainDict)
-        printf("Could not add module __main__"); 
-    if (code.substr(0, 6) == "python") {
-        PyRun_SimpleString("import sys\nsys.stdout = open('file_of_python_output.txt', 'w')\na = globals().copy()\nfirst_dict_ints={k:a[k] for k in set(a) if type(a[k]) == int}\nfirst_dict_lists={k:a[k] for k in set(a) if type(a[k]) == list}");
-        ExecSimpleCommand(code.substr(6));
-        // PyRun_SimpleString("tmp = globals().copy()\nvars = [f'int {k} = {v};' for k,v in tmp.items() if type(v) == int and not k.startswith('_') and k!='tmp' and k!='In' and k!='Out' and k!='sys' and not hasattr(v, '__call__')]\nprint(vars)");
-        // PyRun_SimpleString("b = globals().copy()\nnew_ints = ' '.join([f'int {k} = {b[k]};' for k in set(b) - set(first_dict) if type(b[k]) == int])\nprint('new_ints: ', new_ints)");
-        
-        // transfer ints utility
-        PyRun_SimpleString("def getNewInts():\n    b = globals().copy()\n    new_ints = ' '.join([f'int {k} = {b[k]};' for k in set(b) - set(first_dict_ints) if type(b[k]) == int])\n    return new_ints");
-        PyObject *ints_result = PyObject_CallFunction(PyDict_GetItemString(gMainDict, "getNewInts"), 0);
-        if (!ints_result) {
-            printf("Could not retrieve Python integers!\n");
-        } else {
-            std::string newPythonInts = PyUnicode_AsUTF8(ints_result);
-            // printf("new ints %s\n", PyUnicode_AsUTF8(ints_result));
-            Py_DECREF(ints_result);
-            llvm::cantFail(Interp.ParseAndExecute(newPythonInts));
-        }
-        
-        // transfer lists utility
-        PyRun_SimpleString("def getNewLists():\n    l = globals().copy()\n    new_lists = ' '.join([f'int {k}() = {l[k]};' for k in set(l) - set(first_dict_lists) if type(l[k]) == list]).replace('[','{').replace(']','}').replace('(','[').replace(')',']')\n    return new_lists");
-        PyObject *lists_result = PyObject_CallFunction(PyDict_GetItemString(gMainDict, "getNewLists"), 0);
-        if (!lists_result) {
-            printf("Could not retrieve Python lists!\n");
-        } else {
-            std::string newPythonLists = PyUnicode_AsUTF8(lists_result);
-            Py_DECREF(lists_result);
-            llvm::cantFail(Interp.ParseAndExecute(newPythonLists));
-        }
-        
-
-        PyRun_SimpleString("sys.stdout.close()");
-        std::ifstream f("file_of_python_output.txt");
-        if (f.is_open()) {
-            std::cout << f.rdbuf();
-        }
-        f.close();
-    //   PyObject* objectsRepresentation = PyObject_Repr(gMainDict);
-    //   const char* s = PyUnicode_AsUTF8(objectsRepresentation);
-    //   printf("REPR of global dict: %s\n", s);
-        Py_XDECREF(gMainDict);
-    } 
-    else {
-        auto PTU = Interp.Parse(code);
-        if (!PTU) {
-            auto Err = PTU.takeError();
-            error_stream << DiagnosticsOS.str();
-            // avoid printing the "Parsing failed error"
-            // llvm::logAllUnhandledErrors(std::move(Err), error_stream, "error: ");
-            return true;
-        }
-        if (PTU->TheModule) {
-            llvm::Error ex = Interp.Execute(*PTU);
-            error_stream << DiagnosticsOS.str();
-            if (code.substr(0,3) == "int") {
-                for (clang::Decl* D : PTU->TUPart->decls()) {
-                    if (clang::VarDecl* VD = llvm::dyn_cast<clang::VarDecl>(D)) {
-                        auto Name = VD->getNameAsString();
-                        auto Addr = Interp.getSymbolAddress(clang::GlobalDecl(VD));
-                        if (!Addr) {
-                            llvm::logAllUnhandledErrors(std::move(Addr.takeError()), error_stream, "error: "); 
-                            return true;
-                        }
-                        void * AddrVP = (void*)*Addr;
-                        // printf("Value at '%p' is:'%d'\n", AddrVP, *(int*)AddrVP);
-                        UpdatePythonDictVariable(Name.c_str(), *(int*)AddrVP);
+    if (xcpp::pythonexec::python_check_for_initialisation()) {
+        std::string newPythonInts = xcpp::pythonexec::transfer_python_ints_utility();
+        llvm::cantFail(Interp.ParseAndExecute(newPythonInts));
+        std::string newPythonLists = xcpp::pythonexec::transfer_python_lists_utility();
+        llvm::cantFail(Interp.ParseAndExecute(newPythonLists));
+    }                       
+    
+    auto PTU = Interp.Parse(code);
+    if (!PTU) {
+        auto Err = PTU.takeError();
+        error_stream << DiagnosticsOS.str();
+        // avoid printing the "Parsing failed error"
+        // llvm::logAllUnhandledErrors(std::move(Err), error_stream, "error: ");
+        return true;
+    }
+    if (PTU->TheModule) {
+        llvm::Error ex = Interp.Execute(*PTU);
+        error_stream << DiagnosticsOS.str();
+        if (code.substr(0,3) == "int") {
+            for (clang::Decl* D : PTU->TUPart->decls()) {
+                if (clang::VarDecl* VD = llvm::dyn_cast<clang::VarDecl>(D)) {
+                    auto Name = VD->getNameAsString();
+                    auto Addr = Interp.getSymbolAddress(clang::GlobalDecl(VD));
+                    if (!Addr) {
+                        llvm::logAllUnhandledErrors(std::move(Addr.takeError()), error_stream, "error: "); 
+                        return true;
                     }
+                    void * AddrVP = (void*)*Addr;
+                    // printf("Value at '%p' is:'%d'\n", AddrVP, *(int*)AddrVP);
+                    xcpp::pythonexec::update_python_dict_var(Name.c_str(), *(int*)AddrVP);
                 }
             }
+        }
 
-            else if (code.substr(0,16) == "std::vector<int>") {
-                for (clang::Decl* D : PTU->TUPart->decls()) {
-                    if (clang::VarDecl* VD = llvm::dyn_cast<clang::VarDecl>(D)) {
-                        auto Name = VD->getNameAsString();
-                        auto Addr = Interp.getSymbolAddress(clang::GlobalDecl(VD));
-                        if (!Addr) {
-                            llvm::logAllUnhandledErrors(std::move(Addr.takeError()), error_stream, "error: "); 
-                            return true;
-                        }
-                        void * AddrVP = (void*)*Addr;
-                        UpdatePythonDictVariableVector(Name.c_str(), *(std::vector<int>*)AddrVP);
+        else if (code.substr(0,16) == "std::vector<int>") {
+            for (clang::Decl* D : PTU->TUPart->decls()) {
+                if (clang::VarDecl* VD = llvm::dyn_cast<clang::VarDecl>(D)) {
+                    auto Name = VD->getNameAsString();
+                    auto Addr = Interp.getSymbolAddress(clang::GlobalDecl(VD));
+                    if (!Addr) {
+                        llvm::logAllUnhandledErrors(std::move(Addr.takeError()), error_stream, "error: "); 
+                        return true;
                     }
+                    void * AddrVP = (void*)*Addr;
+                    xcpp::pythonexec::update_python_dict_var_vector(Name.c_str(), *(std::vector<int>*)AddrVP);
                 }
             }
-
-            llvm::logAllUnhandledErrors(std::move(ex), error_stream, "error: "); 
-            return false;
         }
+
+        llvm::logAllUnhandledErrors(std::move(ex), error_stream, "error: "); 
+        return false;
     }
     return false;
 }

@@ -22,6 +22,7 @@
 #include "xeus_clang-repl_config.hpp"
 #include "xbuffer.hpp"
 #include "xmanager.hpp"
+#include "xmagics/pythonexec.hpp"
 
 namespace nl = nlohmann;
 
