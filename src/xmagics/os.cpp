@@ -16,7 +16,7 @@
 
 #include "xeus-clang-repl/xparser.hpp"
 
-#include "os.hpp"
+#include "xmagics/os.hpp"
 
 namespace xcpp
 {

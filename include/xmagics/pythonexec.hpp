@@ -13,8 +13,10 @@
 #include <cstddef>
 #include <string>
 
+#include "xeus-clang-repl/xbuffer.hpp"
 #include "xeus-clang-repl/xmagics.hpp"
 #include "xeus-clang-repl/xoptions.hpp"
+#include "xeus-clang-repl/xinterpreter.hpp"
 
 namespace xcpp
 {
@@ -27,14 +29,20 @@ namespace xcpp
             std::string cline = line;
             std::string ccell = cell;
             execute(cline, ccell);
-        }
+        };
+        static void update_python_dict_var(const char * name, int value);
+        static void update_python_dict_var_vector(const char *name, std::vector<int> &data);
+        void check_python_globals();
+        void exec_python_simple_command(const std::string code);
+        static std::string transfer_python_ints_utility();
+        static std::string transfer_python_lists_utility();
+        static bool python_check_for_initialisation();
 
     private:
 
-        void startup();
+        static void startup();
         xoptions get_options();
         void execute(std::string& line, std::string& cell);
-        
     };
 }
 #endif

@@ -122,9 +122,8 @@ set(XEUS_CLANG_REPL_SRC
     src/xparser.cpp
     src/xholder_clang-repl.cpp
     src/xmagics/os.cpp
-    src/xmagics/os.hpp
     src/xmagics/pythonexec.cpp
-    src/xmagics/pythonexec.hpp
+    
     
 )
 
@@ -140,6 +139,8 @@ set(XEUS_CLANG_REPL_HEADERS
     include/xeus-clang-repl/xoptions.hpp
     include/xeus-clang-repl/xpreamble.hpp
     include/xeus-clang-repl/xparser.hpp
+    include/xmagics/os.hpp
+    include/xmagics/pythonexec.hpp
 )
 
 # xcpp sources
