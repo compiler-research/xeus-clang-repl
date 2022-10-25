@@ -1,23 +1,22 @@
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/index.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/Python-Cpp-Integration-Demo.ipynb)
 
-## Installation
+## Description
 
+`xeus-clang-repl` integrates clang-repl with the xeus protocol and is a platform for C++ usage in Jupyter Notebooks. The demo developed in this repository shows a Python - CPP integraton in Jupyter Notebooks, where variables can be transfered between Python and CPP. 
 
-### Installation from source
+`Disclaimer: this work is highly experimental and might not work beyond the examples provided`
 
+## Try it online
 
-## Trying it online
-
-To try out xeus-cling interactively in your web browser, just click on the binder
+To try out xeus-clang-repl interactively in your web browser, just click on the binder
 link:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/index.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/Python-Cpp-Integration-Demo.ipynb)
 
-## Usage
 
-Launch the jupyter notebook with `jupyter notebook` and launch a new C++ notebook by selecting the **C++14** kernel in the *new* dropdown.
-
-### A C++ notebook
-
-You can now make use of the C++ programming language in the Jupyter notebook.
-
+<img
+   src="./integration-demo-readme.png"
+   alt="Alt text"
+   title="Optional title"
+   style="display: block; margin: 0 auto; max-width: 450px">
+   

@@ -1,3 +1,4 @@
 # The build folder
 /build
 
+.ipynb_checkpoints
