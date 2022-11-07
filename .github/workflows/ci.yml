@@ -1,0 +1,93 @@
+name: Main
+on:
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubu18-clang14
+            os: ubuntu-18.04
+            compiler: gcc-7
+            clang-runtime: '14'
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Save PR Info
+      if: ${{ matrix.coverage == true }}
+      run: |
+        mkdir -p ./pr
+        echo ${{ github.event.number }} > ./pr/NR
+        echo ${{ github.repository }} > ./pr/REPO
+    - uses: nelonoel/branch-name@v1.0.1
+    - name: Setup compiler on Linux
+      if: runner.os == 'Linux'
+      run: |
+        # https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+        vers="${compiler#*-}"
+        os_codename="`cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2`"
+        sudo apt update
+        if [[ "${{ matrix.compiler }}" == *"gcc"* ]]; then
+          sudo apt install -y gcc-${vers} g++-${vers}
+          echo "CC=gcc-${vers}" >> $GITHUB_ENV
+          echo "CXX=g++-${vers}" >> $GITHUB_ENV
+        else
+          if ! sudo apt install -y clang-${vers}; then
+            curl https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+            echo "deb https://apt.llvm.org/${os_codename}/ llvm-toolchain-${os_codename}-${vers} main" | sudo tee -a /etc/apt/sources.list
+            sudo apt update
+            sudo apt install -y clang-${vers}
+          fi
+          echo "CC=clang-${vers}" >> $GITHUB_ENV
+          echo "CXX=clang++-${vers}" >> $GITHUB_ENV
+        fi
+      env:
+        compiler: ${{ matrix.compiler }}
+    - name: Setup runtime LLVM/Clang on Linux
+      if: runner.os == 'Linux'
+      run: |
+        UNIX_DISTRO=$(lsb_release -rs)
+        # Build, cache and install Clang-dev
+        mkdir clang-dev
+        cd clang-dev
+        git clone --depth=1 --branch release/{{ matrix.clang-runtime }}.x --single-branch https://github.com/llvm/llvm-project.git
+        #TODO: patch...
+        cd llvm-project
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang ../llvm
+        make ClangDriverOptions clang-repl
+        PATH_TO_LLVM_BUILD=`pwd`
+        export PATH=$clangbuild/bin:$PATH
+        export LD_LIBRARY_PATH=$clangbuild/lib:$LD_LIBRARY_PATH
+        cd ../../..
+        # We need PATH_TO_LLVM_BUILD later
+        echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
+    - name: Build xeus-clang-repl on Linux
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        # Build and Install xeus-clang-repl
+        mkdir build
+        cd build
+        cmake -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_USE_LINKER=gold ..
+        make install
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+      # When debugging increase to a suitable value!
+      timeout-minutes: ${{ github.event.pull_request && 1 || 20 }}
