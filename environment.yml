@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # Build dependencies
-  #- clangdev=14
+  - clangdev=14
   - cmake
   # Host dependencies
   - xeus>=2.0,<3.0
