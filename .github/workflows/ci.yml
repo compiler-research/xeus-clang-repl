@@ -2,7 +2,7 @@ name: Main
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -16,20 +16,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: ubu18-clang14
-            os: ubuntu-18.04
-            compiler: gcc-7
+          - name: ubu20-gcc9-clang14
+            os: ubuntu-20.04
+            compiler: gcc-9
             clang-runtime: '14'
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.7
+        python-version: '3.10'
     - name: Save PR Info
-      if: ${{ matrix.coverage == true }}
       run: |
         mkdir -p ./pr
         echo ${{ github.event.number }} > ./pr/NR
@@ -58,34 +57,76 @@ jobs:
         fi
       env:
         compiler: ${{ matrix.compiler }}
-    - name: Setup runtime LLVM/Clang on Linux
+    - name: Cache LLVM/Clang runtime build directory
+      uses: actions/cache@v3
+      id: clang-dev-cache
+      with:
+        path: clang-dev
+        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang-${{ matrix.clang-runtime }}.x-patch-${{ hashFiles('patches/llvm/*') }}
+    - name: Setup/Build runtime LLVM/Clang runtime on Linux
       if: runner.os == 'Linux'
       run: |
+        # Warning: If this part of the clang build script is changed to give a different
+        # result, then clear cache 'clang-dev-cache' by hand:
+        # https://github.com/compiler-research/xeus-clang-repl/actions/caches
         UNIX_DISTRO=$(lsb_release -rs)
-        # Build, cache and install Clang-dev
-        mkdir clang-dev
-        cd clang-dev
-        git clone --depth=1 --branch release/{{ matrix.clang-runtime }}.x --single-branch https://github.com/llvm/llvm-project.git
-        #TODO: patch...
-        cd llvm-project
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang ../llvm
-        make ClangDriverOptions clang-repl
+        if [[ "${{ steps.clang-dev-cache.outputs.cache-hit }}" != "true" ]]; then
+          # Fetch clang-dev
+          git clone --depth=1 --branch "release/${{ matrix.clang-runtime }}.x" --single-branch https://github.com/llvm/llvm-project.git clang-dev
+          cd clang-dev
+          # Apply patches
+          git apply ../patches/llvm/*.patch
+          # Build clang-dev
+          mkdir build
+          mkdir inst
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_INSTALL_PREFIX=../inst ../llvm
+          make ClangDriverOptions clang-repl -j$(nproc --all)
+          #make install -j$(nproc --all)
+          #TODO: Clean unneeded folders...
+        else
+          cd clang-dev/build
+        fi
         PATH_TO_LLVM_BUILD=`pwd`
-        export PATH=$clangbuild/bin:$PATH
-        export LD_LIBRARY_PATH=$clangbuild/lib:$LD_LIBRARY_PATH
-        cd ../../..
+        export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH
+        export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
+        cd ../..
+        # Tar prebuild clang-dev for dev binder containers
+        tar -cjf clang-dev.tar.bz2 ./clang-dev
         # We need PATH_TO_LLVM_BUILD later
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
+    - name: Install xeus-clang-repl deps on Linux
+      if: runner.os == 'Linux'
+      run: |
+        # Install xeus-clang-repl deps
+        conda install -y -q -c conda-forge \
+          'xeus>=2.0,<3.0' \
+          'nlohmann_json>=3.9.1,<3.10' \
+          'cppzmq>=4.6.0,<5' \
+          'xtl>=0.7,<0.8' \
+          pugixml \
+          'cxxopts>=2.1.1,<2.2' \
+          libuuid \
+          pytest \
+          jupyter_kernel_test
     - name: Build xeus-clang-repl on Linux
-      if: ${{ runner.os == 'Linux' }}
+      if: runner.os == 'Linux'
       run: |
         # Build and Install xeus-clang-repl
         mkdir build
         cd build
-        cmake -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_USE_LINKER=gold ..
+        PP=$KERNEL_PYTHON_PREFIX
+        if [[ -z "$PP" ]]; then
+          PP=$(conda info --base)
+        fi
+        cmake -DCMAKE_PREFIX_PATH=$PP -DCMAKE_INSTALL_PREFIX=$PP -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold ..
         make install
+    - name: Archive clang-dev artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: clang-dev
+        path: clang-dev.tar.bz2
+        retention-days: 7
     - name: Setup tmate session
       if: ${{ failure() }}
       uses: mxschmitt/action-tmate@v3
