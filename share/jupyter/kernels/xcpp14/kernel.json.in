@@ -8,6 +8,7 @@
       "-fno-exceptions",
       "-fopenmp=libiomp5",
       "-I/usr/lib/gcc/x86_64-linux-gnu/10",
+      "-I@CMAKE_INSTALL_PREFIX@/include", "-I/home/jovyan/include", "-I/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include",
       "-O2",
       "-v"
   ],

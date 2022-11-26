@@ -4,6 +4,7 @@
       "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
       "-f",
       "{connection_file}",
+      "-I@CMAKE_INSTALL_PREFIX@/include", "-I/home/jovyan/include", "-I/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include",
       "-std=c++17"
   ],
   "language": "C++17"
