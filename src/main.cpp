@@ -33,7 +33,7 @@ bool should_print_version(int argc, char *argv[]) {
   return false;
 }
 
-std::string extract_filename(int argc, char *argv[]) {
+std::string extract_filename(int& argc, char *argv[]) {
   std::string res = "";
   for (int i = 0; i < argc; ++i) {
     if ((std::string(argv[i]) == "-f") && (i + 1 < argc)) {
@@ -58,7 +58,7 @@ interpreter_ptr build_interpreter(int argc, char **argv) {
     interpreter_argv[i] = argv[i];
   }
   std::string resource_dir =
-      "--resource-dir=" + std::string(CLANG_RESOURCE_DIR);
+      "-resource-dir=" + std::string(CLANG_RESOURCE_DIR);
   interpreter_argv[interpreter_argc - 1] = resource_dir.c_str();
 
   interpreter_ptr interp_ptr = interpreter_ptr(
