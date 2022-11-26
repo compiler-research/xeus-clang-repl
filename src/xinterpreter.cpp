@@ -132,7 +132,7 @@ namespace xcpp {
 void interpreter::configure_impl() {}
 
 interpreter::interpreter(int argc, const char *const *argv)
-    : m_interpreter(std::move(createInterpreter(Args(argv + 2, argv + argc - 3),
+    : m_interpreter(std::move(createInterpreter(Args(argv + 1, argv + argc),
                                                 DiagPrinter.get()))),
       //          m_input_validator(),
       m_version(get_stdopt(argc, argv)), // Extract C++ language standard
