@@ -13,6 +13,8 @@ USER root
 
 ENV TAG="ubuntu-20.04"
 
+RUN export
+
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
 RUN apt-get update --yes && \
@@ -21,9 +23,12 @@ RUN apt-get update --yes && \
     # Other "our" apt installs
     unzip \
     curl \
-    # Other "our" apt installs (development and testing)
     jq \
+    # Other "our" apt installs (development and testing)
     build-essential \
+    git \
+    nano-tiny \
+    less \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -86,8 +91,21 @@ WORKDIR "${HOME}"
 RUN \
     # Install clang-dev
     artifact_name="clang-dev" && \
-    artifacts_info=$(curl -H "Accept: application/vnd.github+json" "https://api.github.com/repos/compiler-research/xeus-clang-repl/actions/artifacts?per_page=1&name=${artifact_name}") && \
-    artifact_id=$(echo "$artifacts_info" | jq -r ".artifacts[0].id") && \
+    arr=(${BINDER_REQUEST//\// }) && \
+    gh_repo_owner=${arr[2]} && \
+    gh_repo_name=${arr[3]} && \
+    gh_repo="${repo_owner}/${repo_name}" && \
+    gh_repo_branch=${arr[4]} && \
+    #
+    echo ${gh_repo_owner} && \
+    echo ${gh_repo_name} && \
+    echo ${gh_repo} && \
+    echo ${gh_repo_branch} && \
+    #
+    repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
+    echo ${repository_id} && \
+    artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/compiler-research/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
+    artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and .workflow_run.head_branch == \"${gh_repo_branch}\")] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/compiler-research/xeus-clang-repl/actions/artifacts/${artifact_id}.zip" && \
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
