@@ -97,15 +97,7 @@ RUN \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     gh_repo_branch=$(git show-ref --head | grep "refs/remotes/origin/" | grep --invert-match -E "(main|master|HEAD)" | cut -d' ' -f2 | cut -b21-) && \
     #
-    echo ${gh_repo_owner} && \
-    echo ${gh_repo_name} && \
-    echo ${gh_repo} && \
-    echo ${gh_repo_branch} && \
-    #
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
-    echo ${repository_id} && \
-    exit 0
-RUN exit 0 && \
     artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/compiler-research/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and .workflow_run.head_branch == \"${gh_repo_branch}\")] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/compiler-research/xeus-clang-repl/actions/artifacts/${artifact_id}.zip" && \
