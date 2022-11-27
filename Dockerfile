@@ -90,13 +90,14 @@ WORKDIR "${HOME}"
 ### Post Build
 RUN \
     # Install clang-dev
-    export && \
     artifact_name="clang-dev" && \
-    arr=(${BINDER_REQUEST//\// }) && \
+    git_remote_origin_url=$(git config --get remote.origin.url)
+    arr=(${git_remote_origin_url//\// }) && \
     gh_repo_owner=${arr[2]} && \
-    gh_repo_name=${arr[3]} && \
+    arr=(${arr[3]//./ })
+    gh_repo_name=${arr[0]} && \
     gh_repo="${repo_owner}/${repo_name}" && \
-    gh_repo_branch=${arr[4]} && \
+    gh_repo_branch=$(git rev-parse --abbrev-ref HEAD) && \
     #
     echo ${gh_repo_owner} && \
     echo ${gh_repo_name} && \
