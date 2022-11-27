@@ -90,6 +90,7 @@ WORKDIR "${HOME}"
 ### Post Build
 RUN \
     # Install clang-dev
+    export && \
     artifact_name="clang-dev" && \
     arr=(${BINDER_REQUEST//\// }) && \
     gh_repo_owner=${arr[2]} && \
