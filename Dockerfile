@@ -76,8 +76,9 @@ RUN mkdir /home/runner && fix-permissions /home/runner
 # Switch back to jovyan to avoid accidental container runs as root
 USER ${NB_UID}
 
-ENV NB_PYTHON_PREFIX=${CONDA_DIR}
-ENV KERNEL_PYTHON_PREFIX=${CONDA_DIR}
+ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
+    KERNEL_PYTHON_PREFIX=${CONDA_DIR} \
+    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include"
 
 WORKDIR "${HOME}"
 
