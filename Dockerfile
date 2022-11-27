@@ -95,7 +95,7 @@ RUN \
     arr=(${arr[3]//./ }) && \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
-    gh_repo_branch=$(git rev-parse --abbrev-ref HEAD) && \
+    gh_repo_branch=$(git show-ref --head | grep "refs/remotes/origin/" | grep --invert-match -E "(main|master|HEAD)" | cut -d' ' -f2 | cut -b21-) && \
     #
     echo ${gh_repo_owner} && \
     echo ${gh_repo_name} && \
