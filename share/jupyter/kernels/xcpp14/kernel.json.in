@@ -7,7 +7,6 @@
       "-std=c++14",
       "-fno-exceptions",
       "-fopenmp=libiomp5",
-      "-I/usr/lib/gcc/x86_64-linux-gnu/10",
       "-O2",
       "-v"
   ],

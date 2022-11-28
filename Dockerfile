@@ -21,9 +21,12 @@ RUN apt-get update --yes && \
     # Other "our" apt installs
     unzip \
     curl \
-    # Other "our" apt installs (development and testing)
     jq \
+    # Other "our" apt installs (development and testing)
     build-essential \
+    git \
+    nano-tiny \
+    less \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -76,8 +79,9 @@ RUN mkdir /home/runner && fix-permissions /home/runner
 # Switch back to jovyan to avoid accidental container runs as root
 USER ${NB_UID}
 
-ENV NB_PYTHON_PREFIX=${CONDA_DIR}
-ENV KERNEL_PYTHON_PREFIX=${CONDA_DIR}
+ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
+    KERNEL_PYTHON_PREFIX=${CONDA_DIR} \
+    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include"
 
 WORKDIR "${HOME}"
 
@@ -85,8 +89,21 @@ WORKDIR "${HOME}"
 RUN \
     # Install clang-dev
     artifact_name="clang-dev" && \
-    artifacts_info=$(curl -H "Accept: application/vnd.github+json" "https://api.github.com/repos/compiler-research/xeus-clang-repl/actions/artifacts?per_page=1&name=${artifact_name}") && \
-    artifact_id=$(echo "$artifacts_info" | jq -r ".artifacts[0].id") && \
+    git_remote_origin_url=$(git config --get remote.origin.url) && \
+    arr=(${git_remote_origin_url//\// }) && \
+    gh_repo_owner=${arr[2]} && \
+    arr=(${arr[3]//./ }) && \
+    gh_repo_name=${arr[0]} && \
+    gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
+    h=$(git rev-parse HEAD) && \
+    arr=$(git show-ref --head | grep $h | grep "remotes" | cut -d' ' -f2 | rev | cut -d'/' -f1 | rev) && \
+    #arr=$(git show-ref --head | grep "refs/remotes/origin/" | grep --invert-match -E "(main|master|HEAD)" | cut -d' ' -f2 | cut -b21-)
+    gh_repo_branch=$(IFS="|" ; echo "${arr[*]}") && \
+    echo "$gh_repo_branch" && \
+    #
+    repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
+    artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/compiler-research/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
+    artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (.workflow_run.head_branch | test(\"${gh_repo_branch}\")))] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/compiler-research/xeus-clang-repl/actions/artifacts/${artifact_id}.zip" && \
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
