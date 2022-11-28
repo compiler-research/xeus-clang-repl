@@ -83,6 +83,7 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_INSTALL_PREFIX=../inst ../llvm
           make ClangDriverOptions clang-repl -j$(nproc --all)
           #make install -j$(nproc --all)
+          touch test2.txt
           #TODO: Clean unneeded folders...
         else
           cd clang-dev/build
