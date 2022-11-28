@@ -97,7 +97,7 @@ RUN \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     gh_repo_branch=$(git show-ref --head | grep "refs/remotes/origin/" | grep --invert-match -E "(main|master|HEAD)" | cut -d' ' -f2 | cut -b21-) && \
     #
-    echo "Test: ${gh_repo}"
+    echo "Test: ${gh_repo}" && \
     #
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
     artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/compiler-research/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
