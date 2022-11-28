@@ -95,7 +95,10 @@ RUN \
     arr=(${arr[3]//./ }) && \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
-    gh_repo_branch=$(git show-ref --head | grep "refs/remotes/origin/" | grep --invert-match -E "(main|master|HEAD)" | cut -d' ' -f2 | cut -b21-) && \
+    h=$(git rev-parse HEAD) && \
+    arr=$(git show-ref --head | grep $h | grep "remotes" | cut -d' ' -f2 | rev | cut -d'/' -f1 | rev) && \
+    #arr=$(git show-ref --head | grep "refs/remotes/origin/" | grep --invert-match -E "(main|master|HEAD)" | cut -d' ' -f2 | cut -b21-)
+    gh_repo_branch=$(IFS="|" ; echo "${arr[*]}") && \
     #
     echo "Test: ${gh_repo} - '${gh_repo_branch}'" && \
     #
