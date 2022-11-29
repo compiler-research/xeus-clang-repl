@@ -96,9 +96,8 @@ RUN \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     h=$(git rev-parse HEAD) && \
-    arr=$(git show-ref --head | grep $h | grep "remotes" | cut -d' ' -f2 | rev | cut -d'/' -f1 | rev) && \
-    #arr=$(git show-ref --head | grep "refs/remotes/origin/" | grep --invert-match -E "(main|master|HEAD)" | cut -d' ' -f2 | cut -b21-)
-    gh_repo_branch=$(IFS="|" ; echo "${arr[*]}") && \
+    arr=$(git show-ref --head | grep $h | grep "remotes" | grep -o '[^/ ]*$') && \
+    gh_repo_branch="${arr[*]//\|}" && \
     echo "$gh_repo_branch" && \
     #
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
