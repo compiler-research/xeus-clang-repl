@@ -129,7 +129,7 @@ jobs:
         name: clang-dev
         path: clang-dev.tar.bz2
         retention-days: 7
-    - name: Release
+    - name: Release (if we have main repo release tag)
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/v')
       with:
