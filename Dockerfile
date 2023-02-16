@@ -27,6 +27,7 @@ RUN apt-get update --yes && \
     git \
     nano-tiny \
     less \
+    apt-utils \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
