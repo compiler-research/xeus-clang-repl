@@ -1,8 +1,9 @@
 name: Main
 on:
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+  push:
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -127,6 +128,25 @@ jobs:
         name: clang-dev
         path: clang-dev.tar.bz2
         retention-days: 7
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        body: "..."
+        #body_path: ${{ github.workspace }}-CHANGELOG.txt
+        draft: false
+        prerelease: false
+        #name: "..." # default - tag name
+        #tag_name": "..." #	Name of a tag. defaults to github.ref
+        #fail_on_unmatched_files: false
+        #repository: "..." # <owner>/<repo> format. Defaults to GITHUB_REPOSITORY env
+        #target_commitish: "..." # Defaults to repository default branch.
+        token: ${{ secrets.GITHUB_TOKEN }} # Secret GitHub Personal Access Token. Defaults to ${{ github.token }}
+        #discussion_category_name: ""
+        #generate_release_notes: true
+        #append_body: true # Append to existing body instead of overwriting it
+        files: |
+          Dockerfile
     - name: Setup tmate session
       if: ${{ failure() }}
       uses: mxschmitt/action-tmate@v3
