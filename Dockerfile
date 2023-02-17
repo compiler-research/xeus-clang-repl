@@ -109,7 +109,7 @@ RUN \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/compiler-research/xeus-clang-repl/actions/artifacts/${artifact_id}.zip" && \
     download_tag_url="https://github.com/compiler-research/xeus-clang-repl/releases/download/v0.1.1/Dockerfile" && \
-    (if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then download_url="$download_tag_url"; fi) && \
+    if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then download_url="$download_tag_url"; fi && \
     echo "Debug: download url: $download_url" && \
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
