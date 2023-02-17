@@ -137,7 +137,9 @@ jobs:
       # When debugging increase to a suitable value!
       timeout-minutes: ${{ github.event.pull_request && 1 || 20 }}
     - name: Add assets to Release
+      id: add_release_assets
       uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/v')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
