@@ -98,13 +98,15 @@ RUN \
     h=$(git rev-parse HEAD) && \
     arr=$(git show-ref --head | grep $h | grep "remotes" | grep -o '[^/ ]*$') && \
     gh_repo_branch="${arr[*]//\|}" && \
+    gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
     echo "Debug: Repo Branch: $gh_repo_branch" && \
+    echo "Debug: Repo Branch: $gh_repo_branch_regex" && \
     #
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
     echo "Debug: Repo id: $repository_id" && \
     artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/compiler-research/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
     echo "Debug: artifact info: $artifacts_info" && \
-    artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (.workflow_run.head_branch | test(\"${gh_repo_branch}\")))] | sort_by(.updated_at)[-1].id") && \
+    artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/compiler-research/xeus-clang-repl/actions/artifacts/${artifact_id}.zip" && \
     echo "Debug: download url: $download_url" && \
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
