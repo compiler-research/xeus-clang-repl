@@ -88,7 +88,7 @@ WORKDIR "${HOME}"
 ### Post Build
 RUN \
     # Install clang-dev
-    artifact_name="clang-dev" && \
+    artifact_name="clang-dev" && \    
     git_remote_origin_url=$(git config --get remote.origin.url) && \
     arr=(${git_remote_origin_url//\// }) && \
     gh_repo_owner=${arr[2]} && \
@@ -96,7 +96,7 @@ RUN \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     h=$(git rev-parse HEAD) && \
-    arr=$(git show-ref --head | grep $h | grep "remotes" | grep -o '[^/ ]*$') && \
+    arr=$(git show-ref --head | grep $h | grep -E "remotes|tags" | grep -o '[^/ ]*$') && \
     gh_repo_branch="${arr[*]//\|}" && \
     gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
     echo "Debug: Repo Branch: $gh_repo_branch" && \
@@ -108,6 +108,8 @@ RUN \
     echo "Debug: artifact info: $artifacts_info" && \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/compiler-research/xeus-clang-repl/actions/artifacts/${artifact_id}.zip" && \
+    download_tag_url="https://github.com/compiler-research/xeus-clang-repl/releases/download/v0.1.1/Dockerfile" && \
+    (if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then download_url="$download_tag_url"; fi) && \
     echo "Debug: download url: $download_url" && \
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
