@@ -115,7 +115,7 @@ RUN \
     echo "Debug: Aitifacts info: $artifacts_info" | head -n20 && \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/${gh_repo_owner}/${gh_repo_name}/actions/artifacts/${artifact_id}.zip" && \
-    for download_tag in "${gh_repo_branch[@]}"; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_id}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done && \
+    for download_tag in $gh_repo_branch; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_name}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done && \
     echo "Debug: Download url (artifact) info: $download_url" && \
     echo "Debug: Download url (asset) info: $download_tag_url" && \
     if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then curl "$download_tag_url" -L -o "${artifact_name}.tar.bz2"; else curl "$download_url" -L -o "${artifact_name}.zip"; fi && \
