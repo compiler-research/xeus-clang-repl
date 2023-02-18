@@ -103,7 +103,7 @@ RUN \
     arr=$(git show-ref --head | grep $h | grep -E "remotes|tags" | grep -o '[^/ ]*$') && \
     gh_repo_branch="${arr[*]//\|}" && \
     gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
-    gh_repo_branch_regex=$(echo "$gh_repo_branch_regex" | sed -e 's/[]\/$*.^[]/\\&/g')
+    gh_repo_branch_regex=$(echo "$gh_repo_branch_regex" | sed -e 's/[]\/$*.^[]/\\&/g') && \
     echo "Debug: Repo Branch: $gh_repo_branch" && \
     echo "Debug: Repo Branch Regex: $gh_repo_branch_regex" && \
     #
