@@ -81,7 +81,7 @@ USER ${NB_UID}
 
 ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
     KERNEL_PYTHON_PREFIX=${CONDA_DIR} \
-    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include"
+    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include"
 
 WORKDIR "${HOME}"
 
@@ -90,12 +90,14 @@ RUN \
     # Install clang-dev
     artifact_name="clang-dev" && \
     git_remote_origin_url=$(git config --get remote.origin.url) && \
+    echo "Debug: Remote origin url: $git_remote_origin_url" && \
     arr=(${git_remote_origin_url//\// }) && \
     gh_repo_owner=${arr[2]} && \
     arr=(${arr[3]//./ }) && \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     h=$(git rev-parse HEAD) && \
+    echo "Debug: Head h: $h" && \
     arr=$(git show-ref --head | grep $h | grep -E "remotes|tags" | grep -o '[^/ ]*$') && \
     gh_repo_branch="${arr[*]//\|}" && \
     gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
@@ -104,15 +106,19 @@ RUN \
     #
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
+    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
     echo "Debug: Repo id: $repository_id" && \
     artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
+    echo "Debug: Aitifacts info: $artifacts_info" | head -n20 && \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
-    download_url="https://nightly.link/compiler-research/xeus-clang-repl/actions/artifacts/${artifact_id}.zip" && \
-    download_tag_url="https://github.com/compiler-research/xeus-clang-repl/releases/download/v0.1.1/${artifact_id}.tar.bz2" && \
+    download_url="https://nightly.link/${gh_repo_owner}/${gh_repo_name}/actions/artifacts/${artifact_id}.zip" && \
+    download_tag="v0.1.1" && \
+    download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_id}.tar.bz2" && \
+    echo "Debug: Download url (artifact) info: $download_url" && \
+    echo "Debug: Download url (asset) info: $download_tag_url" && \
     if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then curl "$download_tag_url" -L -o "${artifact_name}.tar.bz2"; else curl "$download_url" -L -o "${artifact_name}.zip"; fi && \
-    if [[ -f "${artifact_name}.zip" ]]; then unzip "${artifact_name}.zip"; fi && \
-    if [[ -f "${artifact_name}.zip" ]]; then rm "${artifact_name}.zip"; fi && \
+    if [[ -f "${artifact_name}.zip" ]]; then unzip "${artifact_name}.zip"; rm "${artifact_name}.zip"; fi && \
     tar xjf ${artifact_name}.tar.bz2 && \
     rm ${artifact_name}.tar.bz2 && \
     cd $artifact_name && \
