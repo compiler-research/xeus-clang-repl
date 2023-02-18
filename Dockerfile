@@ -98,11 +98,13 @@ RUN \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     h=$(git rev-parse HEAD) && \
     echo "Debug: Head h: $h" && \
+    br=$(git branch) && \
+    echo "Debug: Branch br: $br" && \
     arr=$(git show-ref --head | grep $h | grep -E "remotes|tags" | grep -o '[^/ ]*$') && \
     gh_repo_branch="${arr[*]//\|}" && \
     gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
     echo "Debug: Repo Branch: $gh_repo_branch" && \
-    echo "Debug: Repo Branch: $gh_repo_branch_regex" && \
+    echo "Debug: Repo Branch Regex: $gh_repo_branch_regex" && \
     #
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
