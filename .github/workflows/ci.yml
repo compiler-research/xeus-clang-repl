@@ -98,8 +98,24 @@ jobs:
         tar -cjf clang-dev.tar.bz2 ./clang-dev
         # We need PATH_TO_LLVM_BUILD later
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
+    - name: Add assets to Release
+      id: add_release_assets
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: |
+          clang-dev.tar.bz2
+    - name: Archive clang-dev artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: clang-dev
+        path: clang-dev.tar.bz2
+        retention-days: 7
     - name: Install xeus-clang-repl deps on Linux
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux' #TODO: exclude on release
       run: |
         # Install xeus-clang-repl deps
         conda update --all
@@ -114,7 +130,7 @@ jobs:
           pytest \
           jupyter_kernel_test
     - name: Build xeus-clang-repl on Linux
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux' #TODO: exclude on release
       run: |
         # Build and Install xeus-clang-repl
         mkdir build
@@ -125,24 +141,8 @@ jobs:
         fi
         cmake -DCMAKE_PREFIX_PATH=$PP -DCMAKE_INSTALL_PREFIX=$PP -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold ..
         make install
-    - name: Archive clang-dev artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: clang-dev
-        path: clang-dev.tar.bz2
-        retention-days: 7
     - name: Setup tmate session
       if: ${{ failure() }}
       uses: mxschmitt/action-tmate@v3
       # When debugging increase to a suitable value!
       timeout-minutes: ${{ github.event.pull_request && 1 || 20 }}
-    - name: Add assets to Release
-      id: add_release_assets
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/v')
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        files: |
-          clang-dev.tar.bz2
