@@ -108,7 +108,7 @@ RUN \
     #
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
-    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include
+    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include && \
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
     echo "Debug: Repo id: $repository_id" && \
     artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
