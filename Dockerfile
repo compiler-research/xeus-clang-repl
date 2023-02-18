@@ -81,7 +81,7 @@ USER ${NB_UID}
 
 ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
     KERNEL_PYTHON_PREFIX=${CONDA_DIR} \
-    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include"
+    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include"
 
 WORKDIR "${HOME}"
 
@@ -109,15 +109,13 @@ RUN \
     #
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
-    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include && \
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
     echo "Debug: Repo id: $repository_id" && \
     artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
     echo "Debug: Aitifacts info: $artifacts_info" | head -n20 && \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
     download_url="https://nightly.link/${gh_repo_owner}/${gh_repo_name}/actions/artifacts/${artifact_id}.zip" && \
-    for download_tag in "${gh_repo_branch[@]}"; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_id}.tar.bz2"; if [[ curl --head --silent --fail -L $download_tag_url 1>/dev/null; ]]; then echo "found"; break; fi; done && \
-    #download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_id}.tar.bz2" && \
+    for download_tag in "${gh_repo_branch[@]}"; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_id}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done && \
     echo "Debug: Download url (artifact) info: $download_url" && \
     echo "Debug: Download url (asset) info: $download_tag_url" && \
     if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then curl "$download_tag_url" -L -o "${artifact_name}.tar.bz2"; else curl "$download_url" -L -o "${artifact_name}.zip"; fi && \
