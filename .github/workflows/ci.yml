@@ -7,7 +7,7 @@ on:
   release:
     types: [published]
   schedule:
-    - cron: '30 1 * * *'
+    - cron: '30 20 * * *' # Warning: Timezone dep - 20:00 is 1:00
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -115,7 +115,7 @@ jobs:
       with:
         name: clang-dev
         path: clang-dev.tar.bz2
-        retention-days: 7
+        retention-days:  ${{ github.event_name=='schedule' && 2 || 7 }}
     - name: Install xeus-clang-repl deps on Linux
       if: runner.os == 'Linux' #TODO: exclude on release
       run: |
