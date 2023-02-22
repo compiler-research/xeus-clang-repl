@@ -46,21 +46,8 @@ using namespace std::placeholders;
 
 std::string DiagnosticOutput;
 llvm::raw_string_ostream DiagnosticsOS(DiagnosticOutput);
-
-static llvm::cl::OptionCategory ClangFormatCategory("Clang-format options");
-static llvm::cl::opt<bool>
-    ShowColors("fcolor-diagnostics",
-               llvm::cl::desc("If set, and on a color-capable terminal controls "
-                        "whether or not to print diagnostics in color"),
-               llvm::cl::init(true), llvm::cl::cat(ClangFormatCategory), llvm::cl::Hidden);
-
-llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> DiagOpts = new clang::DiagnosticOptions();
-// DiagOpts->ShowColors = (ShowColors && ShowColors);
-auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(DiagnosticsOS, &*DiagOpts);
-
-
-// auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
-//     DiagnosticsOS, new clang::DiagnosticOptions());
+auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
+     DiagnosticsOS, new clang::DiagnosticOptions());
 
 ///\returns true on error.
 static bool ProcessCode(clang::Interpreter &Interp, const std::string &code,
@@ -226,7 +213,19 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
       errorlevel = 1;
       // send the errors directly to std::cerr
       ename = "";
-      std::cerr << error_stream.str();
+      try {
+          std::string full_error_string = error_stream.str();
+          std::string error_message = full_error_string.substr(full_error_string.find("error: ") + 7, full_error_string.size());
+          std::string final_part = error_message.substr(error_message.find("\n "), error_message.size());
+          size_t pos = 0;
+          if ((pos = final_part.find("<<< inputs >>>")) !=  std::string::npos) {
+              final_part = final_part.substr(0, pos);
+          }
+          std::cerr << "\033[31merror: "<<"\033[0m"<<error_message.substr(0, error_message.find("\n "))<<"\033[32m"<<final_part;
+      }
+      catch (...) {
+          std::cerr << error_stream.str();
+      }
     }
 
     // If an error was encountered, don't attempt further execution
