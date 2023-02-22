@@ -23,6 +23,8 @@
 
 #include "Python.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Basic/Diagnostic.h"
+#include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/Support/Casting.h"
@@ -41,10 +43,24 @@
 #include "xmagics/pythonexec.hpp"
 
 using namespace std::placeholders;
+
 std::string DiagnosticOutput;
 llvm::raw_string_ostream DiagnosticsOS(DiagnosticOutput);
-auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
-    DiagnosticsOS, new clang::DiagnosticOptions());
+
+static llvm::cl::OptionCategory ClangFormatCategory("Clang-format options");
+static llvm::cl::opt<bool>
+    ShowColors("fcolor-diagnostics",
+               llvm::cl::desc("If set, and on a color-capable terminal controls "
+                        "whether or not to print diagnostics in color"),
+               llvm::cl::init(true), llvm::cl::cat(ClangFormatCategory), llvm::cl::Hidden);
+
+llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> DiagOpts = new clang::DiagnosticOptions();
+// DiagOpts->ShowColors = (ShowColors && ShowColors);
+auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(DiagnosticsOS, &*DiagOpts);
+
+
+// auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
+//     DiagnosticsOS, new clang::DiagnosticOptions());
 
 ///\returns true on error.
 static bool ProcessCode(clang::Interpreter &Interp, const std::string &code,
@@ -60,10 +76,7 @@ static bool ProcessCode(clang::Interpreter &Interp, const std::string &code,
 
   auto PTU = Interp.Parse(code);
   if (!PTU) {
-    auto Err = PTU.takeError();
     error_stream << DiagnosticsOS.str();
-    // avoid printing the "Parsing failed error"
-    // llvm::logAllUnhandledErrors(std::move(Err), error_stream, "error: ");
     return true;
   }
   if (PTU->TheModule) {
@@ -119,12 +132,15 @@ createInterpreter(const Args &ExtraArgs = {},
 
   Args ClangArgs = {"-Xclang", "-emit-llvm-only",
                     "-Xclang", "-diagnostic-log-file",
+                    "-fdiagnostics-color",
                     "-Xclang", "-",
                     "-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
   auto CI = cantFail(clang::IncrementalCompilerBuilder::create(ClangArgs));
-  if (Client)
+  if (Client) {
+    CI->getDiagnostics().setShowColors(true);
     CI->getDiagnostics().setClient(Client, /*ShouldOwnClient=*/false);
+  }
   return cantFail(clang::Interpreter::create(std::move(CI)));
 }
 
