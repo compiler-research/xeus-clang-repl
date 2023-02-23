@@ -141,7 +141,7 @@ jobs:
         if [[ -z "$PP" ]]; then
           PP=$(conda info --base)
         fi
-        cmake -DCMAKE_PREFIX_PATH=$PP -DCMAKE_INSTALL_PREFIX=$PP -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold ..
+        cmake -DCMAKE_PREFIX_PATH=$PP -DCMAKE_INSTALL_PREFIX=$PP -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DLLVM_REQUIRED_VERSION=${{ matrix.clang-runtime }} ..
         make install
     - name: Setup tmate session
       if: ${{ failure() }}
