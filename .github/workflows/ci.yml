@@ -21,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: ubu20-gcc9-clang14
+          - name: ubu20-gcc9-clang15
             os: ubuntu-20.04
             compiler: gcc-9
-            clang-runtime: '14'
+            clang-runtime: '15'
     steps:
     - uses: actions/checkout@v3
       with:
