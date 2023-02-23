@@ -80,7 +80,7 @@ jobs:
           git clone --depth=1 --branch "release/${{ matrix.clang-runtime }}.x" --single-branch https://github.com/llvm/llvm-project.git clang-dev
           cd clang-dev
           # Apply patches
-          git apply ../patches/llvm/*.patch
+          [ -f ../patches/llvm/*.patch ] && git apply ../patches/llvm/*.patch
           # Build clang-dev
           mkdir build
           mkdir inst
