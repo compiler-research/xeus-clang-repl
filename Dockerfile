@@ -123,10 +123,14 @@ RUN \
     echo "Debug: Forked Repo id: $f_repository_id" && \
     f_artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
     echo "Debug: Forked Aitifacts info: $f_artifacts_info" | head -n20 && \
+    echo "Debug: 1" && \
     f_artifact_id=$(echo "$f_artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.repository_id == ${f_repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
+    echo "Debug: 2" && \
     f_download_url="https://nightly.link/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts/${f_artifact_id}.zip" && \
+    echo "Debug: 3" && \
     # tag
     for download_tag in $gh_repo_branch; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_name}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done && \
+    echo "Debug: 4" && \
     # try to download artifact ot release tag asset
     echo "Debug: Download url (asset) repo info: $download_tag_url" && \
     echo "Debug: Download url (artifact) repo info: $download_url" && \
