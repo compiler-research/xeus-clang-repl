@@ -148,8 +148,9 @@ RUN \
     make install -j$(nproc --all) && \
     cd .. && \
     # Clad
-    git clone --depth=1 https://github.com/vgvassilev/clad.git && \
+    mkdir clad && \
     cd clad && \
+    git clone --depth=1 https://github.com/vgvassilev/clad.git && \
     mkdir build && \
     cd build && \
     cmake ../clad -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
