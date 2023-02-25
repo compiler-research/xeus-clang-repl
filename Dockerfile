@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 # https://hub.docker.com/r/jupyter/base-notebook/tags
-ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-20.04
+ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
 FROM $BASE_CONTAINER
 
 LABEL maintainer="Xeus-clang-repl Project"
