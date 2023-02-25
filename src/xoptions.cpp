@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iterator>
 
 namespace xcpp {
 cxxopts::ParseResult xoptions::parse(const std::string &line) {
