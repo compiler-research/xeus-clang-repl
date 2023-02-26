@@ -44,7 +44,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 WORKDIR /tmp
 RUN mamba list && \
     #mamba update --all --no-pin --quiet --yes -c conda-forge && \
-    mamba install --quiet --yes --no-pin -c conda-forge \
+    mamba install -v --quiet --yes --no-pin -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
     python=3.11.0 \
