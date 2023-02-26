@@ -43,8 +43,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # files across image layers when the permissions change
 WORKDIR /tmp
 RUN mamba list && \
-    mamba install --quiet --yes -c conda-forge openssl && \
-    mamba update --all --quiet --yes -c conda-forge && \
+    mamba update --all --no-pin --quiet --yes -c conda-forge && \
     mamba install --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
