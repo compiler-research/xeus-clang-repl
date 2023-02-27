@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 # https://hub.docker.com/r/jupyter/base-notebook/tags
-ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-20.04
+ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
 FROM $BASE_CONTAINER
 
 LABEL maintainer="Xeus-clang-repl Project"
@@ -11,7 +11,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 USER root
 
-ENV TAG="ubuntu-20.04"
+ENV TAG="ubuntu-22.04"
 
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
@@ -43,14 +43,13 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # files across image layers when the permissions change
 WORKDIR /tmp
 RUN mamba list && \
-    mamba update --all --no-pin --quiet --yes -c conda-forge && \
-    mamba install -v --quiet --yes --no-pin -c conda-forge \
+    mamba update --all --quiet --yes -c conda-forge && \
+    mamba install -v --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
-    python=3.6.0 \
     cmake \
     #'clangdev=15' \
-    'xeus>=2.4,<3.0' \
+    'xeus>=2.0,<3.0' \
     'nlohmann_json>=3.9.1,<3.10' \
     'cppzmq>=4.6.0,<5' \
     'xtl>=0.7,<0.8' \
