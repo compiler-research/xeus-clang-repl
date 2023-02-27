@@ -44,9 +44,10 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 WORKDIR /tmp
 RUN mamba list && \
     #mamba update --all --no-pin --quiet --yes -c conda-forge && \
-    mamba install -v --quiet --yes --no-pin -c conda-forge \
+    mamba create -v -n xeus --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
+    'python=3.11' \
     cmake \
     #'clangdev=15' \
     'xeus>=2.0,<3.0' \
@@ -59,6 +60,23 @@ RUN mamba list && \
     # Test dependencies
     pytest \
     jupyter_kernel_test \
+    && \
+    mamba activate xeus && \
+##    mamba install -v --quiet --yes --no-pin -c conda-forge \
+##    # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
+##    # Other "our" conda installs
+##    cmake \
+##    #'clangdev=15' \
+##    'xeus>=2.0,<3.0' \
+##    'nlohmann_json>=3.9.1,<3.10' \
+##    'cppzmq>=4.6.0,<5' \
+##    'xtl>=0.7,<0.8' \
+##    pugixml \
+##    'cxxopts>=2.2.1,<2.3' \
+##    libuuid \
+##    # Test dependencies
+##    pytest \
+##    jupyter_kernel_test \
     && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
