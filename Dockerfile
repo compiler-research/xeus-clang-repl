@@ -61,6 +61,7 @@ RUN mamba list && \
     pytest \
     jupyter_kernel_test \
     'openssl=1.1.1l' \
+    'openssl=3.0.8' \
     && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
