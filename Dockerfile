@@ -28,7 +28,6 @@ RUN apt-get update --yes && \
     nano-tiny \
     less \
     && \
-    apt list | grep python && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 USER ${NB_UID}
@@ -48,6 +47,7 @@ RUN mamba list && \
     mamba install -v --quiet --yes --no-pin -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
+    python=3.11 \
     cmake \
     #'clangdev=15' \
     'xeus>=2.0,<3.0' \
