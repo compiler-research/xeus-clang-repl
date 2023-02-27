@@ -47,10 +47,10 @@ RUN mamba list && \
     mamba install -v --quiet --yes --no-pin -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
-    python=3.10 \
+    python=3.6.0 \
     cmake \
     #'clangdev=15' \
-    'xeus>=2.0,<3.0' \
+    'xeus>=2.4,<3.0' \
     'nlohmann_json>=3.9.1,<3.10' \
     'cppzmq>=4.6.0,<5' \
     'xtl>=0.7,<0.8' \
@@ -60,8 +60,6 @@ RUN mamba list && \
     # Test dependencies
     pytest \
     jupyter_kernel_test \
-    'openssl=1.1.1l' \
-    'openssl=3.0.8' \
     && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
