@@ -47,7 +47,7 @@ RUN mamba list && \
     mamba install -v --quiet --yes --no-pin -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
-    python=3.11 \
+    python=3.10 \
     cmake \
     #'clangdev=15' \
     'xeus>=2.0,<3.0' \
