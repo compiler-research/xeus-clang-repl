@@ -61,7 +61,7 @@ RUN mamba list && \
     pytest \
     jupyter_kernel_test \
     && \
-    mamba activate xeus && \
+    mamba activate xeus \
 ##    mamba install -v --quiet --yes --no-pin -c conda-forge \
 ##    # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
 ##    # Other "our" conda installs
