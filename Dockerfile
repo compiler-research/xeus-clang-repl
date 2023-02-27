@@ -28,7 +28,7 @@ RUN apt-get update --yes && \
     nano-tiny \
     less \
     && \
-    apt-get list && \
+    apt list && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 USER ${NB_UID}
