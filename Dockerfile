@@ -6,6 +6,14 @@
 ARG BASE_CONTAINER=ubuntu:22.04
 FROM $BASE_CONTAINER
 
+#
+ARG NB_USER="jovyan"
+ARG NB_UID="1000"
+ARG NB_GID="100"
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV DEBIAN_FRONTEND noninteractive
+#
+
 LABEL maintainer="Xeus-clang-repl Project"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
