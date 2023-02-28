@@ -44,7 +44,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 WORKDIR /tmp
 RUN echo "Mamba packages before install:" && \
     mamba update --all --quiet --yes -c conda-forge && \
-    mamba install -v --quiet --yes -c conda-forge \
+    mamba install --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
     cmake \
