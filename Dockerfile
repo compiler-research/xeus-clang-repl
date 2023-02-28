@@ -42,7 +42,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-RUN mamba list && \
+RUN echo "Mamba packages before install:" && \
     mamba update --all --quiet --yes -c conda-forge && \
     mamba install -v --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
@@ -60,6 +60,7 @@ RUN mamba list && \
     pytest \
     jupyter_kernel_test \
     && \
+    echo "Mamba packages after install:" && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
     npm cache clean --force && \
