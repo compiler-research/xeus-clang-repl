@@ -44,6 +44,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 WORKDIR /tmp
 RUN echo "Mamba packages before install:" && \
     mamba update --all --quiet --yes -c conda-forge && \
+    mamba list && \
     mamba install --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
@@ -61,6 +62,7 @@ RUN echo "Mamba packages before install:" && \
     jupyter_kernel_test \
     && \
     echo "Mamba packages after install:" && \
+    mamba list && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
     npm cache clean --force && \
