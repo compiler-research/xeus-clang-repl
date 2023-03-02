@@ -2,17 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 
 # https://hub.docker.com/r/jupyter/base-notebook/tags
-#ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
-ARG BASE_CONTAINER=ubuntu:22.04
+ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
 FROM $BASE_CONTAINER
-
-#
-ARG NB_USER="jovyan"
-ARG NB_UID="1000"
-ARG NB_GID="100"
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-ENV DEBIAN_FRONTEND noninteractive
-#
 
 LABEL maintainer="Xeus-clang-repl Project"
 
@@ -51,10 +42,14 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-RUN echo "Mamba packages before install:" && \
+RUN echo "Mamba packages:" && \
+    mamba list && \
     mamba update --all --quiet --yes -c conda-forge && \
+    echo "Mamba packages after update:" && \
     mamba list && \
     mamba install --quiet --yes -c conda-forge \
+    echo "Mamba packages after install:" && \
+    mamba list && \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
     cmake \
@@ -64,14 +59,12 @@ RUN echo "Mamba packages before install:" && \
     'cppzmq>=4.6.0,<5' \
     'xtl>=0.7,<0.8' \
     pugixml \
-    'cxxopts>=2.2.1,<2.3' \
+    'cxxopts>=2.1.1,<2.2' \
     libuuid \
     # Test dependencies
     pytest \
     jupyter_kernel_test \
     && \
-    echo "Mamba packages after install:" && \
-    mamba list && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
     npm cache clean --force && \
