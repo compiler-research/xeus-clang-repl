@@ -62,44 +62,49 @@ jobs:
         fi
       env:
         compiler: ${{ matrix.compiler }}
-    - name: Cache LLVM/Clang runtime build directory
-      uses: actions/cache@v3
-      id: clang-dev-cache
+    - name: Restore Cache LLVM/Clang runtime build directory
+      uses: actions/cache/restore@v3
+      id: cache
       with:
         path: clang-dev
         key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang-${{ matrix.clang-runtime }}.x-patch-${{ hashFiles('patches/llvm/*') }}
-    - name: Setup/Build runtime LLVM/Clang runtime on Linux
-      if: runner.os == 'Linux'
+    - name: Build runtime LLVM/Clang on Linux if the cache is invalid 
+      if: ${{ runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true' }}
       run: |
         # Warning: If this part of the clang build script is changed to give a different
-        # result, then clear cache 'clang-dev-cache' by hand:
+        # result, then clear cache 'cache' by hand:
         # https://github.com/compiler-research/xeus-clang-repl/actions/caches
         UNIX_DISTRO=$(lsb_release -rs)
-        if [[ "${{ steps.clang-dev-cache.outputs.cache-hit }}" != "true" ]]; then
-          # Fetch clang-dev
-          git clone --depth=1 --branch "release/${{ matrix.clang-runtime }}.x" --single-branch https://github.com/llvm/llvm-project.git clang-dev
-          cd clang-dev
-          # Apply patches
-          [ -f ../patches/llvm/*.patch ] && git apply ../patches/llvm/*.patch
-          # Build clang-dev
-          mkdir build
-          mkdir inst
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_INSTALL_PREFIX=../inst ../llvm
-          make ClangDriverOptions clang-repl -j$(nproc --all)
-          #make install -j$(nproc --all)
-          #TODO: Clean unneeded folders...
-        else
-          cd clang-dev/build
-        fi
-        PATH_TO_LLVM_BUILD=`pwd`
-        export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH
-        export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
-        cd ../..
+        # Fetch clang-dev
+        git clone --depth=1 --branch "release/${{ matrix.clang-runtime }}.x" --single-branch https://github.com/llvm/llvm-project.git clang-dev
+        cd clang-dev
+        # Apply patches
+        [ -f ../patches/llvm/*.patch ] && git apply ../patches/llvm/*.patch
+        # Build clang-dev
+        mkdir build
+        mkdir inst
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_INSTALL_PREFIX=../inst ../llvm
+        make ClangDriverOptions clang-repl -j$(nproc --all)
+        #make install -j$(nproc --all)
+        #TODO: Clean unneeded folders...
         # Tar prebuild clang-dev for dev binder containers
         tar -cjf clang-dev.tar.bz2 ./clang-dev
-        # We need PATH_TO_LLVM_BUILD later
+        cd ../..
+    - name: Save Cache LLVM/Clang runtime build directory
+      uses: actions/cache/save@v3
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      with:
+        path: clang-dev
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+    - name: Set PATH_TO_LLVM_BUILD etc to Env
+      run: |
+        export PATH_TO_LLVM_BUILD="$(realpath clang-dev/build)"
+        export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH
+        export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
+        echo "PATH=$PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
     - name: Add assets to Release
       id: add_release_assets
       uses: softprops/action-gh-release@v1
