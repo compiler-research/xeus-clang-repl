@@ -44,6 +44,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 WORKDIR /tmp
 RUN echo "Mamba packages:" && \
     mamba list && \
+    mamba install -v --quiet --yes -c conda-forge 'python=3.9.0=h2a148a8_4_cpython && \
     mamba install -v --quiet --yes -c conda-forge 'mamba=1.2.0=py39hfa8f2c8_0'
     #'python=3.9.16' 'mamba=1.2.0' 'openssl=1.1.1t'
 RUN echo "Mamba packages:" && \
