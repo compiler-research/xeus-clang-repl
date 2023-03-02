@@ -48,8 +48,6 @@ RUN echo "Mamba packages:" && \
     echo "Mamba packages after update:" && \
     mamba list && \
     mamba install --quiet --yes -c conda-forge \
-    echo "Mamba packages after install:" && \
-    mamba list && \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
     cmake \
@@ -65,6 +63,8 @@ RUN echo "Mamba packages:" && \
     pytest \
     jupyter_kernel_test \
     && \
+    echo "Mamba packages after install:" && \
+    mamba list && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
     npm cache clean --force && \
