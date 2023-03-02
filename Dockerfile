@@ -42,8 +42,10 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-RUN mamba install --quiet --yes -c conda-forge 'python=3.10.8' 'mamba=1.2.0' 'openssl=1.1.1s' && \
-    echo "Mamba packages:" && \
+RUN echo "Mamba packages:" && \
+    mamba list && \
+    mamba install --quiet --yes -c conda-forge 'python=3.10.8' 'mamba=1.2.0' 'openssl=1.1'
+RUN echo "Mamba packages:" && \
     mamba list && \
     mamba update --all --quiet --yes -c conda-forge && \
     echo "Mamba packages after update:" && \
