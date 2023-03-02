@@ -42,8 +42,8 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-RUN conda create -n xeus-clang-repl --quiet --yes -c conda-forge 'python=3.9.0=h2a148a8_4_cpython'
-    conda activate xeus-clang-repl
+RUN conda create -n xeus-clang-repl --quiet --yes -c conda-forge 'python=3.9.0=h2a148a8_4_cpython' && \
+    conda activate xeus-clang-repl && \
     echo "Mamba packages:" && \
     mamba list
     #mamba install -v --quiet --yes -c conda-forge 'python=3.9.0=h2a148a8_4_cpython'
