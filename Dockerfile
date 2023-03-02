@@ -44,10 +44,8 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 WORKDIR /tmp
 ### Workaround
 RUN conda create -n xeus-clang-repl --quiet --yes -c conda-forge 'python=3.9.0=h2a148a8_4_cpython' 'mamba=1.2.0=py39hfa8f2c8_0' && \
-    conda init bash
-RUN conda activate xeus-clang-repl && \
-    echo "Mamba packages:" && \
-    mamba list
+    mamba init bash
+RUN mamba activate xeus-clang-repl && \
 ###
 RUN echo "Mamba packages:" && \
     mamba list && \
