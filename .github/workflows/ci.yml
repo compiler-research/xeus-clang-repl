@@ -87,9 +87,6 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_INSTALL_PREFIX=../inst ../llvm
         make ClangDriverOptions clang-repl -j$(nproc --all)
         #make install -j$(nproc --all)
-        #TODO: Clean unneeded folders...
-        # Tar prebuild clang-dev for dev binder containers
-        tar -cjf clang-dev.tar.bz2 ./clang-dev
         cd ../..
     - name: Save Cache LLVM/Clang runtime build directory
       uses: actions/cache/save@v3
@@ -105,6 +102,11 @@ jobs:
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
         echo "PATH=$PATH" >> $GITHUB_ENV
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
+    - name: Create clang-dev.tar.bz2 for artifact/release asset
+      run: |
+        #TODO: Clean unneeded folders...
+        # Tar prebuild clang-dev for dev binder containers
+        tar -cjf clang-dev.tar.bz2 ./clang-dev
     - name: Add assets to Release
       id: add_release_assets
       uses: softprops/action-gh-release@v1
