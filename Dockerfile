@@ -2,9 +2,13 @@
 # Distributed under the terms of the Modified BSD License.
 
 # https://hub.docker.com/r/jupyter/base-notebook/tags
-#ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
-ARG BASE_CONTAINER=jupyter/base-notebook:ed2908bbb62e
-FROM $BASE_CONTAINER
+ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
+#ARG BASE_TAG=latest
+ARG BASE_TAG=ubuntu-22.04
+#TODO: Next line is temporary workaround.
+#      Remove when we can build xeus-clang-repl with Xeus>=3.0
+ARG BASE_TAG=ed2908bbb62e
+FROM $BASE_CONTAINER:$BASE_TAG
 
 LABEL maintainer="Xeus-clang-repl Project"
 
@@ -12,7 +16,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 USER root
 
-ENV TAG="ubuntu-22.04"
+ENV TAG="$BASE_TAG"
 
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
@@ -43,11 +47,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-RUN echo "Mamba packages:" && \
-    mamba list && \
-    mamba update --all --quiet --yes -c conda-forge && \
-    echo "Mamba packages after update:" && \
-    mamba list && \
+RUN mamba update --all --quiet --yes -c conda-forge && \
     mamba install --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
@@ -64,8 +64,6 @@ RUN echo "Mamba packages:" && \
     pytest \
     jupyter_kernel_test \
     && \
-    echo "Mamba packages after install:" && \
-    mamba list && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
     npm cache clean --force && \
@@ -95,7 +93,9 @@ WORKDIR "${HOME}"
 
 ### Post Build
 RUN \
-    # Install clang-dev
+    #
+    # Install clang-dev from GH Artifact or Release asset
+    #
     artifact_name="clang-dev" && \
     git_remote_origin_url=$(git config --get remote.origin.url) && \
     echo "Debug: Remote origin url: $git_remote_origin_url" && \
@@ -149,13 +149,17 @@ RUN \
     PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/build && \
     export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH && \
     export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
+    #
     # Build and Install xeus-clang-repl
+    #
     mkdir build && \
     cd build && \
     cmake -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DLLVM_REQUIRED_VERSION=15 -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
     cd .. && \
-    # Clad
+    #
+    # Build and Install Clad
+    #
     mkdir clad && \
     cd clad && \
     git clone --depth=1 https://github.com/vgvassilev/clad.git && \
