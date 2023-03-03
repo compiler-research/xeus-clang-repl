@@ -170,4 +170,5 @@ RUN \
     #make -j$(nproc --all) && \
     make && \
     make install && \
-    lsof
+    lsof && \
+    sleep 10000
