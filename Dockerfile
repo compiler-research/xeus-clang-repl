@@ -58,7 +58,7 @@ RUN echo "Mamba packages:" && \
     'cppzmq>=4.6.0,<5' \
     'xtl>=0.7,<0.8' \
     pugixml \
-    'cxxopts>=2.1.1,<2.2' \
+    'cxxopts>=2.2.1,<2.3' \
     libuuid \
     # Test dependencies
     pytest \
