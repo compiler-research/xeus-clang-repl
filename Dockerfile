@@ -2,7 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 
 # https://hub.docker.com/r/jupyter/base-notebook/tags
-ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
+#ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
+ARG BASE_CONTAINER=jupyter/base-notebook:latest
 FROM $BASE_CONTAINER
 
 LABEL maintainer="Xeus-clang-repl Project"
@@ -42,20 +43,6 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-
-### Workaround
-RUN echo "Init env:" && \
-    conda init bash -v && \
-    export && \
-    source /home/jovyan/.bashrc && \
-    echo "---" && \
-    export
-RUN echo "Create new env:" && \
-    conda create -v -n xeus-clang-repl --quiet --yes -c conda-forge 'python=3.9.0=h2a148a8_4_cpython' 'mamba=1.2.0=py39hfa8f2c8_0' && \
-    echo "Activate env:" && \
-    conda activate xeus-clang-repl
-###
-
 RUN echo "Mamba packages:" && \
     mamba list && \
     mamba update --all --quiet --yes -c conda-forge && \
