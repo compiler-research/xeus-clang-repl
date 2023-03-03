@@ -170,4 +170,4 @@ RUN \
     #make -j$(nproc --all) && \
     make && \
     make install && \
-    lsof -i -P -n
+    lsof
