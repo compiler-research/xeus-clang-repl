@@ -170,4 +170,4 @@ RUN \
     #make -j$(nproc --all) && \
     make && \
     make install && \
-    lsof -i -P -n | grep "8888 (LISTEN)"
+    lsof -i -P -n
