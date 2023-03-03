@@ -160,6 +160,7 @@ RUN \
     #
     # Build and Install Clad
     #
+    df && \
     mkdir clad && \
     cd clad && \
     git clone --depth=1 https://github.com/vgvassilev/clad.git && \
