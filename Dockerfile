@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 # https://hub.docker.com/r/jupyter/base-notebook/tags
-ARG BASE_CONTAINER=jupyter/base-notebook:ubuntu-22.04
+ARG BASE_CONTAINER=jupyter/base-notebook
 #ARG BASE_TAG=latest
 ARG BASE_TAG=ubuntu-22.04
 #TODO: Next line is temporary workaround.
