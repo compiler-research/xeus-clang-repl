@@ -171,4 +171,4 @@ RUN \
     make && \
     make install && \
     lsof && \
-    sleep 10000
+    sleep 20000
