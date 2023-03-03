@@ -33,6 +33,7 @@ RUN apt-get update --yes && \
     git \
     nano-tiny \
     less \
+    lsof \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
