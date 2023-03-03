@@ -3,11 +3,11 @@
 
 # https://hub.docker.com/r/jupyter/base-notebook/tags
 ARG BASE_CONTAINER=jupyter/base-notebook
-#ARG BASE_TAG=latest
-ARG BASE_TAG=ubuntu-22.04
+ARG BASE_TAG=latest
+#ARG BASE_TAG=ubuntu-22.04
 #TODO: Next line is temporary workaround.
 #      Remove when we can build xeus-clang-repl with Xeus>=3.0
-ARG BASE_TAG=ed2908bbb62e
+#ARG BASE_TAG=ed2908bbb62e
 FROM $BASE_CONTAINER:$BASE_TAG
 
 LABEL maintainer="Xeus-clang-repl Project"
