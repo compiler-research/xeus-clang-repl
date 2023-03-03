@@ -170,5 +170,5 @@ RUN \
     #make -j$(nproc --all) && \
     make && \
     make install && \
-    sudo lsof -i -P -n && \
+    netstat -tulpn && \
     sleep 20000
