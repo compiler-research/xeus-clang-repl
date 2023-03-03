@@ -134,7 +134,6 @@ RUN \
     f_download_url="https://nightly.link/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts/${f_artifact_id}.zip" && \
     # tag
     for download_tag in $gh_repo_branch; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_name}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done && \
-    echo "Debug: 4" && \
     # try to download artifact ot release tag asset
     echo "Debug: Download url (asset) repo info: $download_tag_url" && \
     echo "Debug: Download url (artifact) repo info: $download_url" && \
