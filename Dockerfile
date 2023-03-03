@@ -84,7 +84,7 @@ USER root
 # Make /home/runner directory and fix permisions
 RUN mkdir /home/runner && fix-permissions /home/runner
 
-RUN netstat -a
+RUN sudo netstat -a
 
 # Switch back to jovyan to avoid accidental container runs as root
 USER ${NB_UID}
