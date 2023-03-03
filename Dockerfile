@@ -84,6 +84,8 @@ USER root
 # Make /home/runner directory and fix permisions
 RUN mkdir /home/runner && fix-permissions /home/runner
 
+RUN netstat -tulpn
+
 # Switch back to jovyan to avoid accidental container runs as root
 USER ${NB_UID}
 
@@ -170,5 +172,5 @@ RUN \
     #make -j$(nproc --all) && \
     make && \
     make install && \
-    netstat -tulpn && \
+    v && \
     sleep 20000
