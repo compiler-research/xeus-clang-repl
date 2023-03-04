@@ -67,7 +67,7 @@ jobs:
       id: cache
       with:
         path: clang-dev
-        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang-${{ matrix.clang-runtime }}.x-patch-${{ hashFiles('patches/llvm/*') }}
+        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang-${{ matrix.clang-runtime }}.x-patch-${{ hashFiles('patches/llvm/clang${{ matrix.clang-runtime }}-*.patch') }}
     - name: Build runtime LLVM/Clang on Linux if the cache is invalid 
       if: ${{ runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true' }}
       run: |
@@ -79,7 +79,7 @@ jobs:
         git clone --depth=1 --branch "release/${{ matrix.clang-runtime }}.x" --single-branch https://github.com/llvm/llvm-project.git clang-dev
         cd clang-dev
         # Apply patches
-        [ -f ../patches/llvm/*.patch ] && git apply ../patches/llvm/*.patch
+        [ -f ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch ] && git apply ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch
         # Build clang-dev
         mkdir build
         mkdir inst
