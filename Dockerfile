@@ -36,6 +36,9 @@ RUN apt-get update --yes && \
     net-tools \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+    
+# Create alternative for nano -> nano-tiny
+RUN update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 10
 
 USER ${NB_UID}
 
@@ -172,4 +175,7 @@ RUN \
     #make -j$(nproc --all) && \
     make && \
     make install && \
-    ls -la
+    #
+    ls -la &&\
+    export && \
+    sleep 20000
