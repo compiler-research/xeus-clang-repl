@@ -26,7 +26,7 @@ ENV LC_ALL=en_US.UTF-8 \
     
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
-RUN apt-get update --yes && \
+RUN #apt-get update --yes && \
     apt-get install --yes --no-install-recommends \
     #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
     # Other "our" apt installs
@@ -57,9 +57,7 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-RUN conda config --set safety_checks disabled && \
-    conda config --set channel_priority strict && \
-    mamba update --all --quiet --yes -c conda-forge && \
+RUN #mamba update --all --quiet --yes -c conda-forge && \
     mamba install --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
