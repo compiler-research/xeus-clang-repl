@@ -1,8 +1,7 @@
 diff --git a/clang/include/clang/AST/ASTNodeTraverser.h b/clang/include/clang/AST/ASTNodeTraverser.h
-index 18e7f491f222..10a3b629edf3 100644
 --- a/clang/include/clang/AST/ASTNodeTraverser.h
 +++ b/clang/include/clang/AST/ASTNodeTraverser.h
-@@ -472,6 +472,8 @@ public:
+@@ -476,6 +476,8 @@
      Visit(D->getAsmString());
    }
  
@@ -12,10 +11,9 @@ index 18e7f491f222..10a3b629edf3 100644
  
    void VisitOMPThreadPrivateDecl(const OMPThreadPrivateDecl *D) {
 diff --git a/clang/include/clang/AST/Decl.h b/clang/include/clang/AST/Decl.h
-index 862e8899d275..3fc9fa1d4fdd 100644
 --- a/clang/include/clang/AST/Decl.h
 +++ b/clang/include/clang/AST/Decl.h
-@@ -4154,6 +4154,36 @@ public:
+@@ -4277,6 +4277,34 @@
    static bool classofKind(Kind K) { return K == FileScopeAsm; }
  };
  
@@ -29,11 +27,9 @@ index 862e8899d275..3fc9fa1d4fdd 100644
 +  friend class ASTDeclWriter;
 +
 +  Stmt *Statement = nullptr;
-+  unsigned NumStmts = 0;
-+  FunctionDecl *FD = nullptr;
 +
-+  TopLevelStmtDecl(DeclContext *DC, SourceLocation L)
-+      : Decl(TopLevelStmt, DC, L) {}
++  TopLevelStmtDecl(DeclContext *DC, SourceLocation L, Stmt *S)
++      : Decl(TopLevelStmt, DC, L), Statement(S) {}
 +
 +  virtual void anchor();
 +
@@ -53,10 +49,9 @@ index 862e8899d275..3fc9fa1d4fdd 100644
  /// unnamed FunctionDecl.  For example:
  /// ^{ statement-body }   or   ^(int arg1, float arg2){ statement-body }
 diff --git a/clang/include/clang/AST/RecursiveASTVisitor.h b/clang/include/clang/AST/RecursiveASTVisitor.h
-index f62dc36de556..35ce4d3e8b31 100644
 --- a/clang/include/clang/AST/RecursiveASTVisitor.h
 +++ b/clang/include/clang/AST/RecursiveASTVisitor.h
-@@ -1449,6 +1449,8 @@ DEF_TRAVERSE_DECL(LifetimeExtendedTemporaryDecl, {
+@@ -1543,6 +1543,8 @@
  DEF_TRAVERSE_DECL(FileScopeAsmDecl,
                    { TRY_TO(TraverseStmt(D->getAsmString())); })
  
@@ -66,10 +61,9 @@ index f62dc36de556..35ce4d3e8b31 100644
  
  DEF_TRAVERSE_DECL(FriendDecl, {
 diff --git a/clang/include/clang/Basic/DeclNodes.td b/clang/include/clang/Basic/DeclNodes.td
-index f8ad6cf5b262..3007cc09257b 100644
 --- a/clang/include/clang/Basic/DeclNodes.td
 +++ b/clang/include/clang/Basic/DeclNodes.td
-@@ -93,6 +93,7 @@ def LinkageSpec : DeclNode<Decl>, DeclContext;
+@@ -95,6 +95,7 @@
  def Export : DeclNode<Decl>, DeclContext;
  def ObjCPropertyImpl : DeclNode<Decl>;
  def FileScopeAsm : DeclNode<Decl>;
@@ -78,12 +72,11 @@ index f8ad6cf5b262..3007cc09257b 100644
  def Friend : DeclNode<Decl>;
  def FriendTemplate : DeclNode<Decl>;
 diff --git a/clang/include/clang/Basic/LangOptions.def b/clang/include/clang/Basic/LangOptions.def
-index 4651f4fff6aa..c515a2cfe5a1 100644
 --- a/clang/include/clang/Basic/LangOptions.def
 +++ b/clang/include/clang/Basic/LangOptions.def
-@@ -434,6 +434,11 @@ ENUM_LANGOPT(ExtendIntArgs, ExtendArgsKind, 1, ExtendArgsKind::ExtendTo32,
- 
- VALUE_LANGOPT(FuchsiaAPILevel, 32, 0, "Fuchsia API level")
+@@ -459,6 +459,11 @@
+ // on large _BitInts.
+ BENIGN_VALUE_LANGOPT(MaxBitIntWidth, 32, 128, "Maximum width of a _BitInt")
  
 +LANGOPT(IncrementalExtensions, 1, 0, " True if we want to process statements"
 +        "on the global scope, ignore EOF token and continue later on (thus "
@@ -94,12 +87,11 @@ index 4651f4fff6aa..c515a2cfe5a1 100644
  #undef COMPATIBLE_LANGOPT
  #undef BENIGN_LANGOPT
 diff --git a/clang/include/clang/Driver/Options.td b/clang/include/clang/Driver/Options.td
-index e0d215840714..c1cc0ecd313b 100644
 --- a/clang/include/clang/Driver/Options.td
 +++ b/clang/include/clang/Driver/Options.td
-@@ -2176,6 +2176,14 @@ defm modules_validate_system_headers : BoolOption<"f", "modules-validate-system-
-   PosFlag<SetTrue, [CC1Option], "Validate the system headers that a module depends on when loading the module">,
-   NegFlag<SetFalse, [NoXarchOption]>>, Group<i_Group>;
+@@ -2320,6 +2320,13 @@
+   HelpText<"Do not enforce -fmodules-decluse and private header restrictions for textual headers. "
+            "This flag will be removed in a future Clang release.">;
  
 +def fincremental_extensions :
 +  Flag<["-"], "fincremental-extensions">,
@@ -108,15 +100,13 @@ index e0d215840714..c1cc0ecd313b 100644
 +           "statements on the global scope.">,
 +  MarshallingInfoFlag<LangOpts<"IncrementalExtensions">>;
 +
-+
  def fvalidate_ast_input_files_content:
    Flag <["-"], "fvalidate-ast-input-files-content">,
    Group<f_Group>, Flags<[CC1Option]>,
 diff --git a/clang/include/clang/Lex/Preprocessor.h b/clang/include/clang/Lex/Preprocessor.h
-index e567f6391531..02b837ca8dd1 100644
 --- a/clang/include/clang/Lex/Preprocessor.h
 +++ b/clang/include/clang/Lex/Preprocessor.h
-@@ -261,10 +261,6 @@ class Preprocessor {
+@@ -283,10 +283,6 @@
    /// Empty line handler.
    EmptylineHandler *Emptyline = nullptr;
  
@@ -127,7 +117,7 @@ index e567f6391531..02b837ca8dd1 100644
  public:
    /// The kind of translation unit we are processing.
    const TranslationUnitKind TUKind;
-@@ -1659,11 +1655,14 @@ public:
+@@ -1778,11 +1774,14 @@
    void recomputeCurLexerKind();
  
    /// Returns true if incremental processing is enabled
@@ -145,10 +135,9 @@ index e567f6391531..02b837ca8dd1 100644
  
    /// Specify the point at which code-completion will be performed.
 diff --git a/clang/include/clang/Parse/Parser.h b/clang/include/clang/Parse/Parser.h
-index 74010ca66f99..61d94f03cf86 100644
 --- a/clang/include/clang/Parse/Parser.h
 +++ b/clang/include/clang/Parse/Parser.h
-@@ -457,6 +457,9 @@ public:
+@@ -464,6 +464,9 @@
  
    typedef Sema::FullExprArg FullExprArg;
  
@@ -158,7 +147,7 @@ index 74010ca66f99..61d94f03cf86 100644
    // Parsing methods.
  
    /// Initialize - Warm up the parser.
-@@ -2045,10 +2048,7 @@ private:
+@@ -2071,10 +2074,7 @@
    //===--------------------------------------------------------------------===//
    // C99 6.8: Statements and Blocks.
  
@@ -168,19 +157,18 @@ index 74010ca66f99..61d94f03cf86 100644
 -  /// A SmallVector of expressions, with stack size 12 (the maximum used.)
 +  /// A SmallVector of expressions.
    typedef SmallVector<Expr*, 12> ExprVector;
-   /// A SmallVector of types.
-   typedef SmallVector<ParsedType, 12> TypeVector;
-@@ -2366,7 +2366,9 @@ private:
+ 
+   StmtResult
+@@ -2451,6 +2451,8 @@
        ParsingDeclSpec &DS,
        llvm::function_ref<void(ParsingFieldDeclarator &)> FieldsCallback);
  
-+  Decl *ParseTopLevelStmtDecl();
-   bool isDeclarationSpecifier(bool DisambiguatingWithExpression = false);
++  DeclGroupPtrTy ParseTopLevelStmtDecl();
 +
+   bool isDeclarationSpecifier(ImplicitTypenameContext AllowImplicitTypename,
+                               bool DisambiguatingWithExpression = false);
    bool isTypeSpecifierQualifier();
- 
-   /// isKnownToBeTypeSpecifier - Return true if we know that the specified token
-@@ -2385,10 +2387,13 @@ private:
+@@ -2472,10 +2474,13 @@
  
    /// isDeclarationStatement - Disambiguates between a declaration or an
    /// expression statement, when parsing function bodies.
@@ -193,10 +181,10 @@ index 74010ca66f99..61d94f03cf86 100644
      if (getLangOpts().CPlusPlus)
 -      return isCXXDeclarationStatement();
 +      return isCXXDeclarationStatement(DisambiguatingWithExpression);
-     return isDeclarationSpecifier(true);
+     return isDeclarationSpecifier(ImplicitTypenameContext::No, true);
    }
  
-@@ -2453,7 +2458,7 @@ private:
+@@ -2542,7 +2547,7 @@
    /// isCXXDeclarationStatement - C++-specialized function that disambiguates
    /// between a declaration or an expression statement, when parsing function
    /// bodies. Returns true for declaration, false for expression.
@@ -206,10 +194,9 @@ index 74010ca66f99..61d94f03cf86 100644
    /// isCXXSimpleDeclaration - C++-specialized function that disambiguates
    /// between a simple-declaration or an expression-statement.
 diff --git a/clang/include/clang/Sema/Sema.h b/clang/include/clang/Sema/Sema.h
-index 4b609f4b1477..f9c511598f66 100644
 --- a/clang/include/clang/Sema/Sema.h
 +++ b/clang/include/clang/Sema/Sema.h
-@@ -2938,6 +2938,8 @@ public:
+@@ -3106,6 +3106,8 @@
                                SourceLocation AsmLoc,
                                SourceLocation RParenLoc);
  
@@ -219,10 +206,9 @@ index 4b609f4b1477..f9c511598f66 100644
    Decl *ActOnEmptyDeclaration(Scope *S, const ParsedAttributesView &AttrList,
                                SourceLocation SemiLoc);
 diff --git a/clang/include/clang/Sema/Template.h b/clang/include/clang/Sema/Template.h
-index 540d2c9aa87e..1f4c0a124c3a 100644
 --- a/clang/include/clang/Sema/Template.h
 +++ b/clang/include/clang/Sema/Template.h
-@@ -500,6 +500,7 @@ enum class TemplateSubstitutionKind : char {
+@@ -571,6 +571,7 @@
  // Decls which never appear inside a class or function.
  #define OBJCCONTAINER(DERIVED, BASE)
  #define FILESCOPEASM(DERIVED, BASE)
@@ -231,10 +217,9 @@ index 540d2c9aa87e..1f4c0a124c3a 100644
  #define EXPORT(DERIVED, BASE)
  #define LINKAGESPEC(DERIVED, BASE)
 diff --git a/clang/include/clang/Serialization/ASTBitCodes.h b/clang/include/clang/Serialization/ASTBitCodes.h
-index f98e173b158c..f0cb3eaeb01a 100644
 --- a/clang/include/clang/Serialization/ASTBitCodes.h
 +++ b/clang/include/clang/Serialization/ASTBitCodes.h
-@@ -1311,6 +1311,9 @@ enum DeclCode {
+@@ -1318,6 +1318,9 @@
    /// A FileScopeAsmDecl record.
    DECL_FILE_SCOPE_ASM,
  
@@ -245,10 +230,9 @@ index f98e173b158c..f0cb3eaeb01a 100644
    DECL_BLOCK,
  
 diff --git a/clang/lib/AST/Decl.cpp b/clang/lib/AST/Decl.cpp
-index b2ee34f20cf7..de44381b36cd 100644
 --- a/clang/lib/AST/Decl.cpp
 +++ b/clang/lib/AST/Decl.cpp
-@@ -5094,6 +5094,30 @@ FileScopeAsmDecl *FileScopeAsmDecl::CreateDeserialized(ASTContext &C,
+@@ -5236,6 +5236,29 @@
                                        SourceLocation());
  }
  
@@ -262,14 +246,13 @@ index b2ee34f20cf7..de44381b36cd 100644
 +  SourceLocation BeginLoc = Statement->getBeginLoc();
 +  DeclContext *DC = C.getTranslationUnitDecl();
 +
-+  auto *TLSD = new (C, DC) TopLevelStmtDecl(DC, BeginLoc);
-+  TLSD->Statement = Statement;
-+  return TLSD;
++  return new (C, DC) TopLevelStmtDecl(DC, BeginLoc, Statement);
 +}
 +
 +TopLevelStmtDecl *TopLevelStmtDecl::CreateDeserialized(ASTContext &C,
 +                                                       unsigned ID) {
-+  return new (C, ID) TopLevelStmtDecl(/*DC=*/nullptr, SourceLocation());
++  return new (C, ID)
++      TopLevelStmtDecl(/*DC=*/nullptr, SourceLocation(), /*S=*/nullptr);
 +}
 +
 +SourceRange TopLevelStmtDecl::getSourceRange() const {
@@ -280,10 +263,9 @@ index b2ee34f20cf7..de44381b36cd 100644
  
  EmptyDecl *EmptyDecl::Create(ASTContext &C, DeclContext *DC, SourceLocation L) {
 diff --git a/clang/lib/AST/DeclBase.cpp b/clang/lib/AST/DeclBase.cpp
-index 9ee1cc083086..67063b2622fa 100644
 --- a/clang/lib/AST/DeclBase.cpp
 +++ b/clang/lib/AST/DeclBase.cpp
-@@ -828,6 +828,7 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
+@@ -843,6 +843,7 @@
      case LinkageSpec:
      case Export:
      case FileScopeAsm:
@@ -292,10 +274,9 @@ index 9ee1cc083086..67063b2622fa 100644
      case ObjCPropertyImpl:
      case PragmaComment:
 diff --git a/clang/lib/AST/DeclPrinter.cpp b/clang/lib/AST/DeclPrinter.cpp
-index c3f1d1544f79..24ff7e73bd31 100644
 --- a/clang/lib/AST/DeclPrinter.cpp
 +++ b/clang/lib/AST/DeclPrinter.cpp
-@@ -72,6 +72,7 @@ namespace {
+@@ -72,6 +72,7 @@
      void VisitLabelDecl(LabelDecl *D);
      void VisitParmVarDecl(ParmVarDecl *D);
      void VisitFileScopeAsmDecl(FileScopeAsmDecl *D);
@@ -303,11 +284,12 @@ index c3f1d1544f79..24ff7e73bd31 100644
      void VisitImportDecl(ImportDecl *D);
      void VisitStaticAssertDecl(StaticAssertDecl *D);
      void VisitNamespaceDecl(NamespaceDecl *D);
-@@ -927,6 +928,10 @@ void DeclPrinter::VisitFileScopeAsmDecl(FileScopeAsmDecl *D) {
+@@ -932,6 +933,11 @@
    Out << ")";
  }
  
 +void DeclPrinter::VisitTopLevelStmtDecl(TopLevelStmtDecl *D) {
++  assert(D->getStmt());
 +  D->getStmt()->printPretty(Out, nullptr, Policy, Indentation, "\n", &Context);
 +}
 +
@@ -315,10 +297,9 @@ index c3f1d1544f79..24ff7e73bd31 100644
    Out << "@import " << D->getImportedModule()->getFullModuleName()
        << ";\n";
 diff --git a/clang/lib/CodeGen/CGDecl.cpp b/clang/lib/CodeGen/CGDecl.cpp
-index 18d658436086..22c1aab61e5b 100644
 --- a/clang/lib/CodeGen/CGDecl.cpp
 +++ b/clang/lib/CodeGen/CGDecl.cpp
-@@ -90,6 +90,7 @@ void CodeGenFunction::EmitDecl(const Decl &D) {
+@@ -90,6 +90,7 @@
    case Decl::Export:
    case Decl::ObjCPropertyImpl:
    case Decl::FileScopeAsm:
@@ -326,24 +307,48 @@ index 18d658436086..22c1aab61e5b 100644
    case Decl::Friend:
    case Decl::FriendTemplate:
    case Decl::Block:
+diff --git a/clang/lib/CodeGen/CodeGenModule.h b/clang/lib/CodeGen/CodeGenModule.h
+--- a/clang/lib/CodeGen/CodeGenModule.h
++++ b/clang/lib/CodeGen/CodeGenModule.h
+@@ -591,6 +591,11 @@
+ 
+   llvm::DenseMap<const llvm::Constant *, llvm::GlobalVariable *> RTTIProxyMap;
+ 
++  // Helps squashing blocks of TopLevelStmtDecl into a single llvm::Function
++  // when used with -fincremental-extensions.
++  std::pair<std::unique_ptr<CodeGenFunction>, const TopLevelStmtDecl *>
++      GlobalTopLevelStmtBlockInFlight;
++
+ public:
+   CodeGenModule(ASTContext &C, IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS,
+                 const HeaderSearchOptions &headersearchopts,
+@@ -1590,6 +1595,7 @@
+ 
+   void EmitDeclContext(const DeclContext *DC);
+   void EmitLinkageSpec(const LinkageSpecDecl *D);
++  void EmitTopLevelStmt(const TopLevelStmtDecl *D);
+ 
+   /// Emit the function that initializes C++ thread_local variables.
+   void EmitCXXThreadLocalInitFunc();
 diff --git a/clang/lib/CodeGen/CodeGenModule.cpp b/clang/lib/CodeGen/CodeGenModule.cpp
-index 2777fc22600d..545beddfeceb 100644
 --- a/clang/lib/CodeGen/CodeGenModule.cpp
 +++ b/clang/lib/CodeGen/CodeGenModule.cpp
-@@ -508,6 +508,12 @@ void CodeGenModule::Release() {
+@@ -516,6 +516,14 @@
+   applyGlobalValReplacements();
    applyReplacements();
-   checkAliases();
    emitMultiVersionFunctions();
++
 +  if (Context.getLangOpts().IncrementalExtensions &&
 +      GlobalTopLevelStmtBlockInFlight.first) {
 +    const TopLevelStmtDecl *TLSD = GlobalTopLevelStmtBlockInFlight.second;
 +    GlobalTopLevelStmtBlockInFlight.first->FinishFunction(TLSD->getEndLoc());
 +    GlobalTopLevelStmtBlockInFlight = {};
 +  }
-   EmitCXXGlobalInitFunc();
-   EmitCXXGlobalCleanUpFunc();
-   registerGlobalDtorsWithAtExit();
-@@ -5858,6 +5864,38 @@ void CodeGenModule::EmitLinkageSpec(const LinkageSpecDecl *LSD) {
++
+   if (CXX20ModuleInits && Primary && Primary->isInterfaceOrPartition())
+     EmitCXXModuleInitFunc(Primary);
+   else
+@@ -6150,6 +6158,39 @@
    EmitDeclContext(LSD);
  }
  
@@ -353,13 +358,14 @@ index 2777fc22600d..545beddfeceb 100644
 +
 +  // We emitted a top-level stmt but after it there is initialization.
 +  // Stop squashing the top-level stmts into a single function.
-+  if (CurCGF && !CXXGlobalInits.back()->getName().startswith("__stmts__")) {
++  if (CurCGF && CXXGlobalInits.back() != CurCGF->CurFn) {
 +    CurCGF->FinishFunction(D->getEndLoc());
 +    CurCGF = nullptr;
 +  }
 +
 +  if (!CurCGF) {
 +    // void __stmts__N(void)
++    // FIXME: Ask the ABI name mangler to pick a name.
 +    std::string Name = "__stmts__" + llvm::utostr(CXXGlobalInits.size());
 +    FunctionArgList Args;
 +    QualType RetTy = getContext().VoidTy;
@@ -382,7 +388,7 @@ index 2777fc22600d..545beddfeceb 100644
  void CodeGenModule::EmitDeclContext(const DeclContext *DC) {
    for (auto *I : DC->decls()) {
      // Unlike other DeclContexts, the contents of an ObjCImplDecl at TU scope
-@@ -6067,6 +6105,10 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -6359,6 +6400,10 @@
      break;
    }
  
@@ -393,36 +399,10 @@ index 2777fc22600d..545beddfeceb 100644
    case Decl::Import: {
      auto *Import = cast<ImportDecl>(D);
  
-diff --git a/clang/lib/CodeGen/CodeGenModule.h b/clang/lib/CodeGen/CodeGenModule.h
-index a8a63c8da57f..7c527ab41b42 100644
---- a/clang/lib/CodeGen/CodeGenModule.h
-+++ b/clang/lib/CodeGen/CodeGenModule.h
-@@ -561,6 +561,12 @@ private:
-   MetadataTypeMap VirtualMetadataIdMap;
-   MetadataTypeMap GeneralizedMetadataIdMap;
- 
-+
-+  // Helps squashing blocks of TopLevelStmtDecl into a single llvm::Function
-+  // when used with -fincremental-extensions.
-+  std::pair<std::unique_ptr<CodeGenFunction>, const TopLevelStmtDecl *>
-+      GlobalTopLevelStmtBlockInFlight;
-+
- public:
-   CodeGenModule(ASTContext &C, const HeaderSearchOptions &headersearchopts,
-                 const PreprocessorOptions &ppopts,
-@@ -1496,6 +1502,7 @@ private:
- 
-   void EmitDeclContext(const DeclContext *DC);
-   void EmitLinkageSpec(const LinkageSpecDecl *D);
-+  void EmitTopLevelStmt(const TopLevelStmtDecl *D);
- 
-   /// Emit the function that initializes C++ thread_local variables.
-   void EmitCXXThreadLocalInitFunc();
 diff --git a/clang/lib/CodeGen/ModuleBuilder.cpp b/clang/lib/CodeGen/ModuleBuilder.cpp
-index f6642a79e1e4..5cea88184720 100644
 --- a/clang/lib/CodeGen/ModuleBuilder.cpp
 +++ b/clang/lib/CodeGen/ModuleBuilder.cpp
-@@ -164,6 +164,7 @@ namespace {
+@@ -179,6 +179,7 @@
      }
  
      bool HandleTopLevelDecl(DeclGroupRef DG) override {
@@ -431,10 +411,9 @@ index f6642a79e1e4..5cea88184720 100644
          return true;
  
 diff --git a/clang/lib/Interpreter/IncrementalParser.cpp b/clang/lib/Interpreter/IncrementalParser.cpp
-index 4ade8b8bb074..2fc0e9e1b50b 100644
 --- a/clang/lib/Interpreter/IncrementalParser.cpp
 +++ b/clang/lib/Interpreter/IncrementalParser.cpp
-@@ -97,7 +97,6 @@ public:
+@@ -101,7 +101,6 @@
        CompletionConsumer = &CI.getCodeCompletionConsumer();
  
      Preprocessor &PP = CI.getPreprocessor();
@@ -442,11 +421,20 @@ index 4ade8b8bb074..2fc0e9e1b50b 100644
      PP.EnterMainSourceFile();
  
      if (!CI.hasSema())
+@@ -174,9 +173,6 @@
+   Sema::ModuleImportState ImportState;
+   for (bool AtEOF = P->ParseFirstTopLevelDecl(ADecl, ImportState); !AtEOF;
+        AtEOF = P->ParseTopLevelDecl(ADecl, ImportState)) {
+-    // If we got a null return and something *was* parsed, ignore it.  This
+-    // is due to a top-level semicolon, an action override, or a parse error
+-    // skipping something.
+     if (ADecl && !Consumer->HandleTopLevelDecl(ADecl.get()))
+       return llvm::make_error<llvm::StringError>("Parsing failed. "
+                                                  "The consumer rejected a decl",
 diff --git a/clang/lib/Interpreter/Interpreter.cpp b/clang/lib/Interpreter/Interpreter.cpp
-index 470c9c289a74..25d4304e87d3 100644
 --- a/clang/lib/Interpreter/Interpreter.cpp
 +++ b/clang/lib/Interpreter/Interpreter.cpp
-@@ -135,13 +135,11 @@ IncrementalCompilerBuilder::create(std::vector<const char *> &ClangArgv) {
+@@ -138,13 +138,11 @@
    // specified. By prepending we allow users to override the default
    // action and use other actions in incremental mode.
    // FIXME: Print proper driver diagnostics if the driver flags are wrong.
@@ -466,14 +454,13 @@ index 470c9c289a74..25d4304e87d3 100644
    // Put a dummy C++ file on to ensure there's at least one compile job for the
    // driver to construct.
 diff --git a/clang/lib/Parse/ParseDecl.cpp b/clang/lib/Parse/ParseDecl.cpp
-index f21938c81689..80ff1d982f33 100644
 --- a/clang/lib/Parse/ParseDecl.cpp
 +++ b/clang/lib/Parse/ParseDecl.cpp
-@@ -5186,6 +5186,22 @@ bool Parser::isTypeSpecifierQualifier() {
+@@ -5381,6 +5381,25 @@
    }
  }
  
-+Decl *Parser::ParseTopLevelStmtDecl() {
++Parser::DeclGroupPtrTy Parser::ParseTopLevelStmtDecl() {
 +  assert(PP.isIncrementalProcessingEnabled() && "Not in incremental mode");
 +
 +  // Parse a top-level-stmt.
@@ -483,20 +470,22 @@ index f21938c81689..80ff1d982f33 100644
 +  if (!R.isUsable())
 +    return nullptr;
 +
-+  // FIXME: What do we do if we get something in Stmts?
-+  assert(!Stmts.size() && "Unsupported multiple stmt!");
++  SmallVector<Decl *, 2> DeclsInGroup;
++  DeclsInGroup.push_back(Actions.ActOnTopLevelStmtDecl(R.get()));
++  // Currently happens for things like  -fms-extensions and use `__if_exists`.
++  for (Stmt *S : Stmts)
++    DeclsInGroup.push_back(Actions.ActOnTopLevelStmtDecl(S));
 +
-+  return Actions.ActOnTopLevelStmtDecl(R.get());
++  return Actions.BuildDeclaratorGroup(DeclsInGroup);
 +}
 +
  /// isDeclarationSpecifier() - Return true if the current token is part of a
  /// declaration specifier.
  ///
 diff --git a/clang/lib/Parse/ParseTentative.cpp b/clang/lib/Parse/ParseTentative.cpp
-index 512993a5278e..f22b1ecd7528 100644
 --- a/clang/lib/Parse/ParseTentative.cpp
 +++ b/clang/lib/Parse/ParseTentative.cpp
-@@ -46,7 +46,10 @@ using namespace clang;
+@@ -46,7 +46,10 @@
  ///           'using' 'namespace' '::'[opt] nested-name-specifier[opt]
  ///                 namespace-name ';'
  ///
@@ -508,7 +497,7 @@ index 512993a5278e..f22b1ecd7528 100644
    switch (Tok.getKind()) {
      // asm-definition
    case tok::kw_asm:
-@@ -59,6 +62,40 @@ bool Parser::isCXXDeclarationStatement() {
+@@ -59,6 +62,42 @@
    case tok::kw_static_assert:
    case tok::kw__Static_assert:
      return true;
@@ -525,11 +514,13 @@ index 512993a5278e..f22b1ecd7528 100644
 +      case tok::identifier: {
 +        IdentifierInfo *II = Tok.getIdentifierInfo();
 +        bool isDeductionGuide =
-+            Actions.isDeductionGuideName(getCurScope(), *II, Tok.getLocation());
++            Actions.isDeductionGuideName(getCurScope(), *II, Tok.getLocation(),
++                                         /*Template=*/nullptr);
 +        if (Actions.isCurrentClassName(*II, getCurScope(), &SS) ||
 +            isDeductionGuide) {
 +          if (isConstructorDeclarator(/*Unqualified=*/SS.isEmpty(),
-+                                      isDeductionGuide))
++                                      isDeductionGuide,
++                                      DeclSpec::FriendSpecified::No))
 +            return true;
 +        }
 +        break;
@@ -550,32 +541,37 @@ index 512993a5278e..f22b1ecd7528 100644
    default:
      return isCXXSimpleDeclaration(/*AllowForRangeDecl=*/false);
 diff --git a/clang/lib/Parse/Parser.cpp b/clang/lib/Parse/Parser.cpp
-index ffa1e0f027f1..68ad2ed51ffd 100644
 --- a/clang/lib/Parse/Parser.cpp
 +++ b/clang/lib/Parse/Parser.cpp
-@@ -972,8 +972,16 @@ Parser::ParseExternalDeclaration(ParsedAttributesWithRange &attrs,
+@@ -707,8 +707,7 @@
+ 
+     // Late template parsing can begin.
+     Actions.SetLateTemplateParser(LateTemplateParserCallback, nullptr, this);
+-    if (!PP.isIncrementalProcessingEnabled())
+-      Actions.ActOnEndOfTranslationUnit();
++    Actions.ActOnEndOfTranslationUnit();
+     //else don't tell Sema that we ended parsing: more input might come.
+     return true;
+ 
+@@ -1029,8 +1028,13 @@
        ConsumeToken();
        return nullptr;
      }
-+    // FIXME: Remove the incremental processing pre-condition and verify clang
-+    // still can pass its test suite, which will harden
-+    // `isDeclarationStatement`.
 +    if (PP.isIncrementalProcessingEnabled() &&
 +        !isDeclarationStatement(/*DisambiguatingWithExpression=*/true))
-+      SingleDecl = ParseTopLevelStmtDecl();
++      return ParseTopLevelStmtDecl();
 +
      // We can't tell whether this is a function-definition or declaration yet.
--    return ParseDeclarationOrFunctionDefinition(attrs, DS);
+-    return ParseDeclarationOrFunctionDefinition(Attrs, DeclSpecAttrs, DS);
 +    if (!SingleDecl)
-+      return ParseDeclarationOrFunctionDefinition(attrs, DS);
++      return ParseDeclarationOrFunctionDefinition(Attrs, DeclSpecAttrs, DS);
    }
  
    // This routine returns a DeclGroup, if the thing we parsed only contains a
 diff --git a/clang/lib/Sema/SemaDecl.cpp b/clang/lib/Sema/SemaDecl.cpp
-index bcadf4139046..3de8136f8d7b 100644
 --- a/clang/lib/Sema/SemaDecl.cpp
 +++ b/clang/lib/Sema/SemaDecl.cpp
-@@ -18652,6 +18652,12 @@ Decl *Sema::ActOnFileScopeAsmDecl(Expr *expr,
+@@ -19550,6 +19550,12 @@
    return New;
  }
  
@@ -589,10 +585,9 @@ index bcadf4139046..3de8136f8d7b 100644
                                        IdentifierInfo* AliasName,
                                        SourceLocation PragmaLoc,
 diff --git a/clang/lib/Serialization/ASTCommon.cpp b/clang/lib/Serialization/ASTCommon.cpp
-index c60f87a23985..fe0fbca43d66 100644
 --- a/clang/lib/Serialization/ASTCommon.cpp
 +++ b/clang/lib/Serialization/ASTCommon.cpp
-@@ -411,6 +411,7 @@ bool serialization::isRedeclarableDeclKind(unsigned Kind) {
+@@ -412,6 +412,7 @@
    case Decl::PragmaComment:
    case Decl::PragmaDetectMismatch:
    case Decl::FileScopeAsm:
@@ -601,10 +596,9 @@ index c60f87a23985..fe0fbca43d66 100644
    case Decl::Friend:
    case Decl::FriendTemplate:
 diff --git a/clang/lib/Serialization/ASTReaderDecl.cpp b/clang/lib/Serialization/ASTReaderDecl.cpp
-index 5d63a26132b7..e6ecdf71d395 100644
 --- a/clang/lib/Serialization/ASTReaderDecl.cpp
 +++ b/clang/lib/Serialization/ASTReaderDecl.cpp
-@@ -397,6 +397,7 @@ namespace clang {
+@@ -402,6 +402,7 @@
      void VisitLinkageSpecDecl(LinkageSpecDecl *D);
      void VisitExportDecl(ExportDecl *D);
      void VisitFileScopeAsmDecl(FileScopeAsmDecl *AD);
@@ -612,7 +606,7 @@ index 5d63a26132b7..e6ecdf71d395 100644
      void VisitImportDecl(ImportDecl *D);
      void VisitAccessSpecDecl(AccessSpecDecl *D);
      void VisitFriendDecl(FriendDecl *D);
-@@ -1578,6 +1579,11 @@ void ASTDeclReader::VisitFileScopeAsmDecl(FileScopeAsmDecl *AD) {
+@@ -1678,6 +1679,11 @@
    AD->setRParenLoc(readSourceLocation());
  }
  
@@ -624,17 +618,18 @@ index 5d63a26132b7..e6ecdf71d395 100644
  void ASTDeclReader::VisitBlockDecl(BlockDecl *BD) {
    VisitDecl(BD);
    BD->setBody(cast_or_null<CompoundStmt>(Record.readStmt()));
-@@ -2902,7 +2908,8 @@ static bool isConsumerInterestedIn(ASTContext &Ctx, Decl *D, bool HasBody) {
-       isa<ObjCImplDecl>(D) ||
-       isa<ImportDecl>(D) ||
-       isa<PragmaCommentDecl>(D) ||
--      isa<PragmaDetectMismatchDecl>(D))
-+      isa<PragmaDetectMismatchDecl>(D) ||
-+      isa<TopLevelStmtDecl>(D))
+@@ -3022,8 +3028,8 @@
+       return false;
+   }
+ 
+-  if (isa<FileScopeAsmDecl, ObjCProtocolDecl, ObjCImplDecl, ImportDecl,
+-          PragmaCommentDecl, PragmaDetectMismatchDecl>(D))
++  if (isa<FileScopeAsmDecl, TopLevelStmtDecl, ObjCProtocolDecl, ObjCImplDecl,
++          ImportDecl, PragmaCommentDecl, PragmaDetectMismatchDecl>(D))
      return true;
-   if (isa<OMPThreadPrivateDecl>(D) || isa<OMPDeclareReductionDecl>(D) ||
-       isa<OMPDeclareMapperDecl>(D) || isa<OMPAllocateDecl>(D) ||
-@@ -3700,6 +3707,9 @@ Decl *ASTReader::ReadDeclRecord(DeclID ID) {
+   if (isa<OMPThreadPrivateDecl, OMPDeclareReductionDecl, OMPDeclareMapperDecl,
+           OMPAllocateDecl, OMPRequiresDecl>(D))
+@@ -3829,6 +3835,9 @@
    case DECL_FILE_SCOPE_ASM:
      D = FileScopeAsmDecl::CreateDeserialized(Context, ID);
      break;
@@ -645,10 +640,9 @@ index 5d63a26132b7..e6ecdf71d395 100644
      D = BlockDecl::CreateDeserialized(Context, ID);
      break;
 diff --git a/clang/lib/Serialization/ASTWriterDecl.cpp b/clang/lib/Serialization/ASTWriterDecl.cpp
-index 06cb60823db6..3065b67dddc4 100644
 --- a/clang/lib/Serialization/ASTWriterDecl.cpp
 +++ b/clang/lib/Serialization/ASTWriterDecl.cpp
-@@ -121,6 +121,7 @@ namespace clang {
+@@ -124,6 +124,7 @@
      void VisitLinkageSpecDecl(LinkageSpecDecl *D);
      void VisitExportDecl(ExportDecl *D);
      void VisitFileScopeAsmDecl(FileScopeAsmDecl *D);
@@ -656,7 +650,7 @@ index 06cb60823db6..3065b67dddc4 100644
      void VisitImportDecl(ImportDecl *D);
      void VisitAccessSpecDecl(AccessSpecDecl *D);
      void VisitFriendDecl(FriendDecl *D);
-@@ -1155,6 +1156,12 @@ void ASTDeclWriter::VisitFileScopeAsmDecl(FileScopeAsmDecl *D) {
+@@ -1171,6 +1172,12 @@
    Code = serialization::DECL_FILE_SCOPE_ASM;
  }
  
@@ -669,31 +663,37 @@ index 06cb60823db6..3065b67dddc4 100644
  void ASTDeclWriter::VisitEmptyDecl(EmptyDecl *D) {
    VisitDecl(D);
    Code = serialization::DECL_EMPTY;
-@@ -2394,7 +2401,7 @@ static bool isRequiredDecl(const Decl *D, ASTContext &Context,
+@@ -2418,7 +2425,7 @@
  
    // File scoped assembly or obj-c or OMP declare target implementation must be
    // seen.
--  if (isa<FileScopeAsmDecl>(D) || isa<ObjCImplDecl>(D))
-+  if (isa<FileScopeAsmDecl>(D) || isa<ObjCImplDecl>(D) || isa<TopLevelStmtDecl>(D))
+-  if (isa<FileScopeAsmDecl, ObjCImplDecl>(D))
++  if (isa<FileScopeAsmDecl, TopLevelStmtDecl, ObjCImplDecl>(D))
      return true;
  
    if (WritingModule && isPartOfPerModuleInitializer(D)) {
 diff --git a/clang/test/Interpreter/disambiguate-decl-stmt.cpp b/clang/test/Interpreter/disambiguate-decl-stmt.cpp
 new file mode 100644
-index 000000000000..256c89c76682
 --- /dev/null
 +++ b/clang/test/Interpreter/disambiguate-decl-stmt.cpp
-@@ -0,0 +1,51 @@
-+// REQUIRES: host-supports-jit
-+// UNSUPPORTED: system-aix
-+// RUN: cat %s | clang-repl -Xcc -std=c++20 -Xcc -Xclang -Xcc -verify | FileCheck %s
+@@ -0,0 +1,56 @@
 +// RUN: %clang_cc1 -fsyntax-only -verify -fincremental-extensions -std=c++20 %s
++// RUN: %clang_cc1 -fsyntax-only -DMS -fms-extensions -verify -fincremental-extensions -std=c++20 %s
 +
 +// expected-no-diagnostics
 +
 +extern "C" int printf(const char*,...);
 +
 +// Decls which are hard to disambiguate
++
++// ParseStatementOrDeclaration returns multiple statements.
++#ifdef MS
++int g_bFlag = 1;
++__if_exists(::g_bFlag) {
++  printf("Entering __if_exists\n");
++  printf("g_bFlag = %d\n", g_bFlag);
++}
++#endif // MS
 +
 +// Operators.
 +struct S1 { operator int(); };
@@ -717,7 +717,6 @@ index 000000000000..256c89c76682
 +namespace N { struct S { S(); }; }
 +N::S::S() { printf("N::S::S()\n"); }
 +N::S s;
-+// CHECK: N::S::S()
 +
 +namespace Ns {namespace Ns { void Ns(); void Fs();}}
 +void Ns::Ns::Ns() { printf("void Ns::Ns::Ns()\n"); }
@@ -725,7 +724,6 @@ index 000000000000..256c89c76682
 +
 +Ns::Ns::Fs();
 +Ns::Ns::Ns();
-+// CHECK-NEXT: void Ns::Ns::Ns()
 +
 +struct Attrs1 { Attrs1(); };
 +Attrs1::Attrs1() __attribute((pure)) = default;
@@ -737,7 +735,6 @@ index 000000000000..256c89c76682
 +namespace N {};
 diff --git a/clang/test/Interpreter/execute-stmts.cpp b/clang/test/Interpreter/execute-stmts.cpp
 new file mode 100644
-index 000000000000..567b783ad8cb
 --- /dev/null
 +++ b/clang/test/Interpreter/execute-stmts.cpp
 @@ -0,0 +1,38 @@
@@ -781,7 +778,6 @@ index 000000000000..567b783ad8cb
 +// CHECK-NEXT: j = 4
 diff --git a/clang/test/Interpreter/stmt-serialization.cpp b/clang/test/Interpreter/stmt-serialization.cpp
 new file mode 100644
-index 000000000000..4d97a3dc5c64
 --- /dev/null
 +++ b/clang/test/Interpreter/stmt-serialization.cpp
 @@ -0,0 +1,19 @@
@@ -804,11 +800,21 @@ index 000000000000..4d97a3dc5c64
 +#pragma clang module import TopLevelStmt.Statements
 +
 +printf("Value of i is '%d'", i);
+diff --git a/clang/tools/libclang/CIndex.cpp b/clang/tools/libclang/CIndex.cpp
+--- a/clang/tools/libclang/CIndex.cpp
++++ b/clang/tools/libclang/CIndex.cpp
+@@ -6696,6 +6696,7 @@
+   case Decl::Export:
+   case Decl::ObjCPropertyImpl:
+   case Decl::FileScopeAsm:
++  case Decl::TopLevelStmt:
+   case Decl::StaticAssert:
+   case Decl::Block:
+   case Decl::Captured:
 diff --git a/clang/unittests/Interpreter/InterpreterTest.cpp b/clang/unittests/Interpreter/InterpreterTest.cpp
-index 280c6d7fdae2..7c4aee2fd1f7 100644
 --- a/clang/unittests/Interpreter/InterpreterTest.cpp
 +++ b/clang/unittests/Interpreter/InterpreterTest.cpp
-@@ -118,14 +118,8 @@ TEST(InterpreterTest, DeclsAndStatements) {
+@@ -124,14 +124,8 @@
    auto *PTU1 = R1->TUPart;
    EXPECT_EQ(2U, DeclsSize(PTU1));
  
@@ -823,4 +829,4 @@ index 280c6d7fdae2..7c4aee2fd1f7 100644
 +  EXPECT_TRUE(!!R2);
  }
  
- static std::string MangleName(NamedDecl *ND) {
+ TEST(InterpreterTest, UndoCommand) {
