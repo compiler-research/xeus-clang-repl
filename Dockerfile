@@ -26,7 +26,7 @@ ENV LC_ALL=en_US.UTF-8 \
     
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
-RUN #apt-get update --yes && \
+RUN apt-get update --yes && \
     apt-get install --yes --no-install-recommends \
     #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
     # Other "our" apt installs
@@ -40,10 +40,16 @@ RUN #apt-get update --yes && \
     less \
     net-tools \
     && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen
+    
+ENV LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8
     
 # Create alternative for nano -> nano-tiny
-RUN update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 10
+#RUN update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 10
 
 USER ${NB_UID}
 
@@ -57,8 +63,8 @@ COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 WORKDIR /tmp
-RUN #mamba update --all --quiet --yes -c conda-forge && \
-    mamba install --quiet --yes -c conda-forge \
+#RUN mamba update --all --quiet --yes -c conda-forge && \
+RUN mamba install --quiet --yes -c conda-forge \
     # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
     cmake \
