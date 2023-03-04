@@ -21,6 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: ubu22-gcc12-clang14
+            os: ubuntu-22.04
+            compiler: gcc-12
+            clang-runtime: '14'
           - name: ubu22-gcc12-clang15
             os: ubuntu-22.04
             compiler: gcc-12
@@ -62,16 +66,12 @@ jobs:
         fi
       env:
         compiler: ${{ matrix.compiler }}
-    - name: Calc Patches hash
-      run: |
-        ver="${{ hashFiles(format('patches/llvm/clang{0}-*.patch', matrix.clang-runtime)) }}
-        echo "PATCHES_HASH=$PATCHES_HASH" >> $GITHUB_ENV
     - name: Restore Cache LLVM/Clang runtime build directory
       uses: actions/cache/restore@v3
       id: cache
       with:
         path: clang-dev
-        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang${{ matrix.clang-runtime }}.x-patch-${{ env.PATCHES_HASH }}
+        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang${{ matrix.clang-runtime }}.x-patch-${{ hashFiles(format('patches/llvm/clang{0}-*.patch', matrix.clang-runtime)) }}
     - name: Build runtime LLVM/Clang on Linux if the cache is invalid 
       if: ${{ runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true' }}
       run: |
