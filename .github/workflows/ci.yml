@@ -65,7 +65,8 @@ jobs:
     - name: Calc Patches hash
       run: |
         ver="${{ matrix.clang-runtime }}"
-        export PATCHES_HASH=${{ hashFiles("$N") }}
+        export PATCHES_HASH=${{ hashFiles("") }}
+        z=${{ hashFiles('patches/llvm/clang${{ matrix.clang-runtime }}-*.patch') }}
         echo "PATCHES_HASH=$PATCHES_HASH" >> $GITHUB_ENV
       env:
         P: ${{ hashFiles('patches/llvm/clang${{ matrix.clang-runtime }}-*.patch') }}
