@@ -64,13 +64,8 @@ jobs:
         compiler: ${{ matrix.compiler }}
     - name: Calc Patches hash
       run: |
-        ver="${{ matrix.clang-runtime }}"
-        export PATCHES_HASH=${{ hashFiles('') }}
-        z=${{ hashFiles('patches/llvm/clang${{ matrix.clang-runtime }}-*.patch') }}
+        ver="${{ hashFiles(format('patches/llvm/clang{0}-*.patch', matrix.clang-runtime)) }}
         echo "PATCHES_HASH=$PATCHES_HASH" >> $GITHUB_ENV
-      env:
-        P: ${{ hashFiles('patches/llvm/clang${{ matrix.clang-runtime }}-*.patch') }}
-        N: "patches/llvm/clang${{ matrix.clang-runtime }}-*.patch"
     - name: Restore Cache LLVM/Clang runtime build directory
       uses: actions/cache/restore@v3
       id: cache
