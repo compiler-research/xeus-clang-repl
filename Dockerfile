@@ -178,4 +178,5 @@ RUN \
     #
     ls -la &&\
     export && \
+    ls /ust/local/bin -la &&\
     sleep 20000
