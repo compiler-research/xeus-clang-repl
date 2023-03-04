@@ -171,4 +171,5 @@ RUN \
     cmake ../clad -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
     #make -j$(nproc --all) && \
     make && \
-    make install
+    make install && \
+    ls -la
