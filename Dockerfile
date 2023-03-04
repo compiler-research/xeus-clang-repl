@@ -8,8 +8,8 @@ ARG BASE_CONTAINER=jupyter/base-notebook
 #TODO: Next line is temporary workaround.
 #      Remove when we can build xeus-clang-repl with Xeus>=3.0
 #ARG BASE_TAG=ed2908bbb62e
-#ARG BASE_TAG=6d82e8a70bf0
-ARG BASE_TAG=python-3.10.6
+ARG BASE_TAG=e7a88452cb71
+#ARG BASE_TAG=python-3.10.6
 FROM $BASE_CONTAINER:$BASE_TAG
 
 LABEL maintainer="Xeus-clang-repl Project"
