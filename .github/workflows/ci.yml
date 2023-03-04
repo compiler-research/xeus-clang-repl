@@ -62,12 +62,17 @@ jobs:
         fi
       env:
         compiler: ${{ matrix.compiler }}
+    - name: Calc Patches hash
+      run: |
+        ver="${{ matrix.clang-runtime }}"
+        export PATCHES_HASH="${{ hashFiles('patches/llvm/clang${ver}-*.patch') }}"
+        echo "PATCHES_HASH=$PATCHES_HASH" >> $GITHUB_ENV
     - name: Restore Cache LLVM/Clang runtime build directory
       uses: actions/cache/restore@v3
       id: cache
       with:
         path: clang-dev
-        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang${{ matrix.clang-runtime }}.x-patch-${{ hashFiles('patches/llvm/clang15-*.patch') }}
+        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.compiler }}-clang${{ matrix.clang-runtime }}.x-patch-${{ env.PATCHES_HASH }}
     - name: Build runtime LLVM/Clang on Linux if the cache is invalid 
       if: ${{ runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true' }}
       run: |
