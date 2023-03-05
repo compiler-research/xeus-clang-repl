@@ -5,8 +5,8 @@
 ARG BASE_CONTAINER=jupyter/base-notebook
 #ARG BASE_TAG=latest
 #ARG BASE_TAG=ubuntu-22.04
-#TODO: Next line is temporary workaround.
-#      Remove when we can build xeus-clang-repl with Xeus>=3.0
+#TODO: Next ARG line(s) is temporary workaround.
+#      Remove them when we can build xeus-clang-repl with Xeus>=3.0
 ARG BASE_TAG=7285848c0a11
 #ARG BASE_TAG=2023-01-24
 #ARG BASE_TAG=python-3.10.6
@@ -185,8 +185,4 @@ RUN \
     cmake ../clad -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
     #make -j$(nproc --all) && \
     make && \
-    make install && \
-    #
-    ls -la &&\
-    export && \
-    ls /usr/local/bin -la
+    make install
