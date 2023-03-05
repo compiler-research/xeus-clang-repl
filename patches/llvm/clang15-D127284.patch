@@ -163,7 +163,7 @@ index 41bfc9f48..3bac03c30 100644
 -  /// used.)
 -  typedef SmallVector<Stmt*, 32> StmtVector;
 -  /// A SmallVector of expressions, with stack size 12 (the maximum used.)
-+  /// xyz
++  /// A SmallVector of expressions.
    typedef SmallVector<Expr*, 12> ExprVector;
    /// A SmallVector of types.
    typedef SmallVector<ParsedType, 12> TypeVector;
@@ -541,8 +541,8 @@ index 512993a52..d600d0b09 100644
 +        if (Actions.isCurrentClassName(*II, getCurScope(), &SS) ||
 +            isDeductionGuide) {
 +          if (isConstructorDeclarator(/*Unqualified=*/SS.isEmpty(),
-+                                      isDeductionGuide,
-+                                      DeclSpec::FriendSpecified::No))
++                                      isDeductionGuide/*,
++                                      DeclSpec::FriendSpecified::No*/))
 +            return true;
 +        }
 +        break;
