@@ -128,8 +128,6 @@ jobs:
       if: runner.os == 'Linux' #TODO: exclude on release
       run: |
         # Install xeus-clang-repl deps
-        echo "Conda packages before updat and install:"
-        conda list
         conda update --all
         conda install -y -q -c conda-forge \
           'xeus>=2.0,<3.0' \
@@ -141,8 +139,6 @@ jobs:
           libuuid \
           pytest \
           jupyter_kernel_test
-        echo "Conda packages after updat and install:"
-        conda list
     - name: Build xeus-clang-repl on Linux
       if: runner.os == 'Linux' #TODO: exclude on release
       run: |
