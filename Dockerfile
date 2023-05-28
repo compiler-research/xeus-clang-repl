@@ -26,8 +26,8 @@ ENV LC_ALL=en_US.UTF-8 \
     
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
-RUN apt-get update --yes && \
-    apt-get install --yes --no-install-recommends \
+#RUN apt-get update --yes && \
+RUN apt-get install --yes --no-install-recommends \
     #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
     # Other "our" apt installs
     unzip \
@@ -121,7 +121,8 @@ RUN \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     gh_f_repo_name=${gh_repo_name} && \
-    h=$(git rev-parse HEAD) && \
+    h=$(git rev-parse HEAD)
+RUN \
     echo "Debug: Head h: $h" && \
     br=$(git branch) && \
     echo "Debug: Branch br: $br" && \
@@ -133,13 +134,15 @@ RUN \
     echo "Debug: Repo Branch Regex: $gh_repo_branch_regex" && \
     #
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
-    pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
+    pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl
+RUN \
     # repo
     repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
     echo "Debug: Repo id: $repository_id" && \
     artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
-    download_url="https://nightly.link/${gh_repo_owner}/${gh_repo_name}/actions/artifacts/${artifact_id}.zip" && \
+    download_url="https://nightly.link/${gh_repo_owner}/${gh_repo_name}/actions/artifacts/${artifact_id}.zip"
+RUN \
     # forked repo
     f_repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_f_repo_owner}/${gh_f_repo_name}" | jq -r ".id") && \
     echo "Debug: Forked Repo id: $f_repository_id" && \
@@ -147,7 +150,8 @@ RUN \
     f_artifact_id=$(echo "$f_artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.repository_id == ${f_repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
     f_download_url="https://nightly.link/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts/${f_artifact_id}.zip" && \
     # tag
-    for download_tag in $gh_repo_branch; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_name}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done && \
+    for download_tag in $gh_repo_branch; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_name}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done
+RUN \
     # try to download artifact ot release tag asset
     echo "Debug: Download url (asset) repo info: $download_tag_url" && \
     echo "Debug: Download url (artifact) repo info: $download_url" && \
@@ -162,7 +166,8 @@ RUN \
     #
     PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/build && \
     export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH && \
-    export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
+    export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
+RUN \
     #
     # Build and Install xeus-clang-repl
     #
@@ -170,7 +175,8 @@ RUN \
     cd build && \
     cmake -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DLLVM_REQUIRED_VERSION=15 -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
-    cd .. && \
+    cd ..
+RUN \
     #
     # Build and Install Clad
     #
