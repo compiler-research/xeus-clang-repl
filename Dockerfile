@@ -26,8 +26,8 @@ ENV LC_ALL=en_US.UTF-8 \
     
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
-#RUN apt-get update --yes && \
-RUN apt-get install --yes --no-install-recommends \
+RUN apt-get update --yes && \
+    apt-get install --yes --no-install-recommends \
     #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
     # Other "our" apt installs
     unzip \
