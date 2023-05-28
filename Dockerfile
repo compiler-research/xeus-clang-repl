@@ -121,12 +121,13 @@ RUN \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     gh_f_repo_name=${gh_repo_name} && \
-    h=$(git rev-parse HEAD)
-RUN \
+    h=$(git rev-parse HEAD) && \
     echo "Debug: Head h: $h" && \
+    export h
+RUN \
     br=$(git branch) && \
     echo "Debug: Branch br: $br" && \
-    arr1=$(git show-ref --head | grep $h | grep -E "remotes|tags" | grep -o '[^/ ]*$') && \
+    arr1=$(git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$') && \
     gh_repo_branch="${arr1[*]//\|}" && \
     gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
     gh_repo_branch_regex=$(echo "$gh_repo_branch_regex" | sed -e 's/[]\/$*.^[]/\\\\&/g') && \
