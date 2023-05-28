@@ -161,7 +161,7 @@ RUN \
     popd
 RUN \
     #
-    echo "Debug clang path: $PATH_TO_CLANG_DEV"
+    echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
     export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/build && \
     export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH && \
     export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
