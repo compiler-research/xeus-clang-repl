@@ -157,7 +157,7 @@ RUN \
     tar xjf ${artifact_name}.tar.bz2 && \
     rm ${artifact_name}.tar.bz2 && \
     cd $artifact_name && \
-    PATH_TO_CLANG_DEV=$(pwd) && \
+    export PATH_TO_CLANG_DEV=$(pwd) && \
     popd
 RUN \
     #
