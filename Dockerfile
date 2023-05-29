@@ -158,14 +158,12 @@ RUN \
     rm ${artifact_name}.tar.bz2 && \
     cd $artifact_name && \
     export PATH_TO_CLANG_DEV=$(pwd) && \
-    popd
-RUN \
+    popd && \
     #
     echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
     export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/build && \
     export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH && \
-    export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
-RUN \
+    export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
     #
     # Build and Install xeus-clang-repl
     #
