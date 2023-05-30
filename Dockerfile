@@ -171,17 +171,15 @@ RUN \
     cd build && \
     cmake -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DLLVM_REQUIRED_VERSION=15 -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
-    cd ..
-RUN \
+    cd .. && \
     #
     # Build and Install Clad
     #
-    mkdir clad && \
-    cd clad && \
     git clone --depth=1 https://github.com/vgvassilev/clad.git && \
+    cd clad && \
     mkdir build && \
-    cd build && \
-    cmake ../clad -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
+    cd build
+    ##cmake ../clad -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
     #make -j$(nproc --all) && \
-    make && \
-    make install
+    ##make && \
+    ##make install
