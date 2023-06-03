@@ -23,6 +23,8 @@
 
 #include "Python.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Basic/Diagnostic.h"
+#include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/Support/Casting.h"
@@ -41,10 +43,11 @@
 #include "xmagics/pythonexec.hpp"
 
 using namespace std::placeholders;
+
 std::string DiagnosticOutput;
 llvm::raw_string_ostream DiagnosticsOS(DiagnosticOutput);
 auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
-    DiagnosticsOS, new clang::DiagnosticOptions());
+     DiagnosticsOS, new clang::DiagnosticOptions());
 
 ///\returns true on error.
 static bool ProcessCode(clang::Interpreter &Interp, const std::string &code,
@@ -60,10 +63,7 @@ static bool ProcessCode(clang::Interpreter &Interp, const std::string &code,
 
   auto PTU = Interp.Parse(code);
   if (!PTU) {
-    auto Err = PTU.takeError();
     error_stream << DiagnosticsOS.str();
-    // avoid printing the "Parsing failed error"
-    // llvm::logAllUnhandledErrors(std::move(Err), error_stream, "error: ");
     return true;
   }
   if (PTU->TheModule) {
@@ -119,12 +119,15 @@ createInterpreter(const Args &ExtraArgs = {},
 
   Args ClangArgs = {"-Xclang", "-emit-llvm-only",
                     "-Xclang", "-diagnostic-log-file",
+                    "-fdiagnostics-color",
                     "-Xclang", "-",
                     "-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
   auto CI = cantFail(clang::IncrementalCompilerBuilder::create(ClangArgs));
-  if (Client)
+  if (Client) {
+    CI->getDiagnostics().setShowColors(true);
     CI->getDiagnostics().setClient(Client, /*ShouldOwnClient=*/false);
+  }
   return cantFail(clang::Interpreter::create(std::move(CI)));
 }
 
@@ -210,7 +213,19 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
       errorlevel = 1;
       // send the errors directly to std::cerr
       ename = "";
-      std::cerr << error_stream.str();
+      try {
+          std::string full_error_string = error_stream.str();
+          std::string error_message = full_error_string.substr(full_error_string.find("error: ") + 7, full_error_string.size());
+          std::string final_part = error_message.substr(error_message.find("\n "), error_message.size());
+          size_t pos = 0;
+          if ((pos = final_part.find("<<< inputs >>>")) !=  std::string::npos) {
+              final_part = final_part.substr(0, pos);
+          }
+          std::cerr << "\033[31merror: "<<"\033[0m"<<error_message.substr(0, error_message.find("\n "))<<"\033[32m"<<final_part;
+      }
+      catch (...) {
+          std::cerr << error_stream.str();
+      }
     }
 
     // If an error was encountered, don't attempt further execution
