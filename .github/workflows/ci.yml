@@ -79,8 +79,8 @@ jobs:
         git clone --depth=1 --branch "release/${{ matrix.clang-runtime }}.x" --single-branch https://github.com/llvm/llvm-project.git clang-dev
         cd clang-dev
         # Apply patches
-        echo "Apply clang${{ matrix.clang-runtime }}-*.patch patches"
-        [ -f ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch ] && git apply ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch
+        echo "Apply clang${{ matrix.clang-runtime }}-*.patch patches:"
+        compgen -G "../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch" > /dev/null && find ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch -printf "%f\n" && git apply ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch
         # Build clang-dev
         mkdir build
         mkdir inst
