@@ -24,7 +24,7 @@ jobs:
           - name: ubu22-gcc12-clang15
             os: ubuntu-22.04
             compiler: gcc-12
-            clang-runtime: '15'
+            clang-runtime: '16'
     steps:
     - uses: actions/checkout@v3
       with:
