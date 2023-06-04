@@ -1,5 +1,6 @@
 {
   "display_name": "C++17",
+  "env": {"LD_LIBRARY_PATH":"@CMAKE_LD_LIBRARY_PATH@", "PYTHONPATH":"@CMAKE_PYTHONPATH@"},
   "argv": [
       "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
       "-f",
