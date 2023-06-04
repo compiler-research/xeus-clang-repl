@@ -47,7 +47,7 @@ set(cppzmq_REQUIRED_VERSION 4.3.0)
 set(llvm_REQUIRED_VERSION 14)
 if (LLVM_REQUIRED_VERSION)
   set(llvm_REQUIRED_VERSION ${LLVM_REQUIRED_VERSION})
-endif() 
+endif()
 
 find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
 find_package(cppzmq ${cppzmq_REQUIRED_VERSION} REQUIRED)
@@ -69,6 +69,31 @@ include(AddLLVM)
 include(HandleLLVMOptions)
 
 add_definitions(-DCLANG_RESOURCE_DIR="${LLVM_BINARY_DIR}/lib/clang/${LLVM_PACKAGE_VERSION}")
+
+#set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
+include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS_LIST})
+
+# If the llvm sources are present add them with higher priority.
+if (LLVM_BUILD_MAIN_SRC_DIR)
+  # LLVM_INCLUDE_DIRS contains the include paths to both LLVM's source and
+  # build directories. Since we cannot just include ClangConfig.cmake (see
+  # fixme above) we have to do a little more work to get the right include
+  # paths for clang.
+  #
+  # FIXME: We only support in-tree builds of clang, that is clang being built
+  # in llvm_src/tools/clang.
+  include_directories(SYSTEM ${LLVM_BUILD_MAIN_SRC_DIR}/tools/clang/include/)
+
+  if (NOT LLVM_BUILD_BINARY_DIR)
+    message(FATAL "LLVM_BUILD_* values should be available for the build tree")
+  endif()
+
+  include_directories(SYSTEM ${LLVM_BUILD_BINARY_DIR}/tools/clang/include/)
+endif()
 
 find_package(cxxopts REQUIRED)
 find_package(PythonLibs REQUIRED)
@@ -99,13 +124,23 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     endif()
 
-    CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
-
-    if (HAS_CPP14_FLAG)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-    else()
-        message(FATAL_ERROR "Unsupported compiler -- xeus requires C++14 support!")
+    ## Clang 13 require c++14 or later, Clang 16 require c++17 or later.
+    if (LLVM_VERSION_MAJOR GREATER_EQUAL 16)
+        if (NOT CMAKE_CXX_STANDARD)
+            set (CMAKE_CXX_STANDARD 17)
+        endif()
+        if (CMAKE_CXX_STANDARD LESS 17)
+          message(fatal "LLVM/InterOp requires c++17 or later")
+        endif()
+    elseif (LLVM_VERSION_MAJOR GREATER_EQUAL 13)
+        if (NOT CMAKE_CXX_STANDARD)
+            set (CMAKE_CXX_STANDARD 14)
+        endif()
+        if (CMAKE_CXX_STANDARD LESS 14)
+          message(fatal "LLVM/InterOp requires c++14 or later")
+        endif()
     endif()
+
 endif()
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
@@ -161,7 +196,10 @@ llvm_add_library(xeus-clang-repl SHARED ${XEUS_CLANG_REPL_SRC} ${XEUS_CLANG_REPL
 
 # xcpp is the target for the kernel executable
 add_executable(xcpp ${XCPP_SRC})
-set_target_properties(xcpp PROPERTIES ENABLE_EXPORTS 1)
+set_target_properties(xcpp PROPERTIES
+  ENABLE_EXPORTS 1
+  CXX_STANDARD ${CMAKE_CXX_STANDARD}
+)
 target_link_libraries(xcpp PUBLIC xeus-clang-repl pthread)
 
 set(LLVM_NO_DEAD_STRIP 1)
@@ -206,8 +244,8 @@ set_target_properties(xeus-clang-repl PROPERTIES
                       PREFIX ""
                       VERSION ${${PROJECT_NAME}_VERSION}
                       SOVERSION ${XEUS_CLANG_REPL_VERSION_MAJOR}
-                      OUTPUT_NAME "libxeus-clang-repl")
-
+                      OUTPUT_NAME "libxeus-clang-repl"
+                      CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
 ################
 # Installation #

@@ -79,7 +79,7 @@ static bool ProcessCode(clang::Interpreter &Interp, const std::string &code,
                                         error_stream, "error: ");
             return true;
           }
-          void *AddrVP = (void *)*Addr;
+          void *AddrVP = (*Addr).toPtr<void*>();
           // printf("Value at '%p' is:'%d'\n", AddrVP, *(int*)AddrVP);
           xcpp::pythonexec::update_python_dict_var(Name.c_str(),
                                                    *(int *)AddrVP);
@@ -97,7 +97,7 @@ static bool ProcessCode(clang::Interpreter &Interp, const std::string &code,
                                         error_stream, "error: ");
             return true;
           }
-          void *AddrVP = (void *)*Addr;
+          void *AddrVP = (*Addr).toPtr<void*>();
           xcpp::pythonexec::update_python_dict_var_vector(
               Name.c_str(), *(std::vector<int> *)AddrVP);
         }
@@ -463,7 +463,8 @@ static void injectSymbol(llvm::StringRef LinkerMangledName,
   }
 
   // Nothing to define, we are redefining the same function. FIXME: Diagnose.
-  if (*Symbol && (JITTargetAddress)*Symbol == KnownAddr)
+//  if (*Symbol && (JITTargetAddress)*Symbol == KnownAddr)
+  if (*Symbol && (*Symbol).getValue() == KnownAddr)
     return;
 
   // Let's inject it
@@ -471,12 +472,11 @@ static void injectSymbol(llvm::StringRef LinkerMangledName,
   SymbolMap::iterator It;
   static llvm::orc::SymbolMap m_InjectedSymbols;
 
-  llvm::orc::LLJIT *Jit =
-      const_cast<llvm::orc::LLJIT *>(Interp.getExecutionEngine());
-  JITDylib &DyLib = Jit->getMainJITDylib();
+  llvm::orc::LLJIT &Jit = *Interp.getExecutionEngine();
+  JITDylib &DyLib = Jit.getMainJITDylib();
 
   std::tie(It, Inserted) = m_InjectedSymbols.try_emplace(
-      Jit->getExecutionSession().intern(LinkerMangledName),
+      Jit.getExecutionSession().intern(LinkerMangledName),
       JITEvaluatedSymbol(KnownAddr, JITSymbolFlags::Exported));
   assert(Inserted && "Why wasn't this found in the initial Jit lookup?");
 

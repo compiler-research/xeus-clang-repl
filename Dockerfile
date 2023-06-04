@@ -184,5 +184,7 @@ RUN \
     make && \
     make install && \
     # install clad in all exist kernels
-    jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' $KERNEL_PYTHON_PREFIX/share/jupyter/kernels/xcpp14/kernel.json > tmp.$$.json && mv tmp.$$.json $KERNEL_PYTHON_PREFIX/share/jupyter/kernels/xcpp14/kernel.json
-    
+    for i in $KERNEL_PYTHON_PREFIX/share/jupyter/kernels/*
+    do
+      jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' $i/kernel.json > tmp.$$.json && mv tmp.$$.json $i/kernel.json
+    done
