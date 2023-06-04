@@ -23,6 +23,9 @@ message(STATUS "Building xeus-clang-repl v${${PROJECT_NAME}_VERSION}")
 
 include(GNUInstallDirs)
 
+set(CMAKE_LD_LIBRARY_PATH "/home/jovyan/cppyy-backend/python/cppyy_backend/lib:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/build/lib")
+set(CMAKE_PYTHONPATH "/home/jovyan/CPyCppyy/build:/home/jovyan/cppyy-backend/python")
+
 configure_file (
     "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp11/kernel.json.in"
     "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp11/kernel.json"
@@ -47,7 +50,7 @@ set(cppzmq_REQUIRED_VERSION 4.3.0)
 set(llvm_REQUIRED_VERSION 14)
 if (LLVM_REQUIRED_VERSION)
   set(llvm_REQUIRED_VERSION ${LLVM_REQUIRED_VERSION})
-endif() 
+endif()
 
 find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
 find_package(cppzmq REQUIRED CONFIG)
@@ -61,6 +64,19 @@ find_package(Clang REQUIRED CONFIG PATHS "${LLVM_BINARY_DIR}/lib/cmake/clang/" "
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIR})
 
+#InterOp
+#TODO: Make InterOp cmake package and use find_package
+#find_package(InterOp REQUIRED CONFIG PATHS "${INTEROP_DIR}")
+add_library(clangInterOp SHARED IMPORTED)
+set_property(TARGET clangInterOp PROPERTY IMPORTED_LOCATION "${INTEROP_DIR}/lib/libclangInterOp.so")
+set_property(TARGET clangInterOp PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${INTEROP_DIR}/../include")
+#
+message(STATUS "InterOp Imported location: ${INTEROP_DIR}/lib/libclangInterOp.so")
+message(STATUS "InterOp include location: ${INTEROP_DIR}/../include")
+
+
+###
+
 # Before including llvm suppress the option() honors normal variables warning.
 if(POLICY CMP0077)
   cmake_policy(SET CMP0077 NEW)
@@ -70,6 +86,31 @@ include(AddLLVM)
 include(HandleLLVMOptions)
 
 add_definitions(-DCLANG_RESOURCE_DIR="${LLVM_BINARY_DIR}/lib/clang/${LLVM_PACKAGE_VERSION}")
+
+#set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
+include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS_LIST})
+
+# If the llvm sources are present add them with higher priority.
+if (LLVM_BUILD_MAIN_SRC_DIR)
+  # LLVM_INCLUDE_DIRS contains the include paths to both LLVM's source and
+  # build directories. Since we cannot just include ClangConfig.cmake (see
+  # fixme above) we have to do a little more work to get the right include
+  # paths for clang.
+  #
+  # FIXME: We only support in-tree builds of clang, that is clang being built
+  # in llvm_src/tools/clang.
+  include_directories(SYSTEM ${LLVM_BUILD_MAIN_SRC_DIR}/tools/clang/include/)
+
+  if (NOT LLVM_BUILD_BINARY_DIR)
+    message(FATAL "LLVM_BUILD_* values should be available for the build tree")
+  endif()
+
+  include_directories(SYSTEM ${LLVM_BUILD_BINARY_DIR}/tools/clang/include/)
+endif()
 
 find_package(cxxopts REQUIRED)
 find_package(PythonLibs REQUIRED)
@@ -100,13 +141,23 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     endif()
 
-    CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
-
-    if (HAS_CPP14_FLAG)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-    else()
-        message(FATAL_ERROR "Unsupported compiler -- xeus requires C++14 support!")
+    ## Clang 13 require c++14 or later, Clang 16 require c++17 or later.
+    if (LLVM_VERSION_MAJOR GREATER_EQUAL 16)
+        if (NOT CMAKE_CXX_STANDARD)
+            set (CMAKE_CXX_STANDARD 17)
+        endif()
+        if (CMAKE_CXX_STANDARD LESS 17)
+          message(fatal "LLVM/InterOp requires c++17 or later")
+        endif()
+    elseif (LLVM_VERSION_MAJOR GREATER_EQUAL 13)
+        if (NOT CMAKE_CXX_STANDARD)
+            set (CMAKE_CXX_STANDARD 14)
+        endif()
+        if (CMAKE_CXX_STANDARD LESS 14)
+          message(fatal "LLVM/InterOp requires c++14 or later")
+        endif()
     endif()
+
 endif()
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
@@ -158,12 +209,25 @@ set(XCPP_HEADERS
 # xeus-clang-repl is the target for the library
 set(LLVM_REQUIRES_EH ON)
 set(LLVM_REQUIRES_RTTI ON)
-llvm_add_library(xeus-clang-repl SHARED ${XEUS_CLANG_REPL_SRC} ${XEUS_CLANG_REPL_HEADERS})
+add_library(xeus-clang-repl SHARED ${XEUS_CLANG_REPL_SRC} ${XEUS_CLANG_REPL_HEADERS})
 
 # xcpp is the target for the kernel executable
 add_executable(xcpp ${XCPP_SRC})
-set_target_properties(xcpp PROPERTIES ENABLE_EXPORTS 1)
+set_target_properties(xcpp PROPERTIES
+  ENABLE_EXPORTS 1
+  CXX_STANDARD ${CMAKE_CXX_STANDARD}
+)
 target_link_libraries(xcpp PUBLIC xeus-clang-repl pthread)
+
+#TODO: We may be need sse RPATH
+#set_target_properties(xcpp clangInterOp PROPERTIES
+#    INSTALL_RPATH_USE_LINK_PATH TRUE
+#)
+if(APPLE)
+    target_link_libraries(xcpp PUBLIC -Wl,-w -Wl,-bind_at_load -Wl,-undefined,dynamic_lookup)
+elseif(NOT MSVC)
+    target_link_libraries(xcpp PUBLIC -Wl,--unresolved-symbols=ignore-in-object-files)
+endif()
 
 set(LLVM_NO_DEAD_STRIP 1)
 
@@ -195,20 +259,25 @@ target_include_directories(xeus-clang-repl SYSTEM
                            PUBLIC
                            $<BUILD_INTERFACE:${XEUS_CLANG-REPL_INCLUDE_DIR}>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(xeus-clang-repl PUBLIC clangInterpreter xeus pugixml cxxopts::cxxopts)
+target_link_libraries(xeus-clang-repl PUBLIC clangInterOp xeus pugixml cxxopts::cxxopts)
+
+if(APPLE)
+    target_link_libraries(xeus-clang-repl PUBLIC -Wl,-w -Wl,-bind_at_load -Wl,-undefined,dynamic_lookup)
+elseif(NOT MSVC)
+    target_link_libraries(xeus-clang-repl PUBLIC -Wl,--unresolved-symbols=ignore-in-object-files)
+endif()
 
 target_include_directories(xeus-clang-repl PUBLIC ${PYTHON_INCLUDE_DIRS})
 target_link_libraries(xeus-clang-repl PUBLIC ${PYTHON_LIBRARIES})
 target_link_libraries(xeus-clang-repl ${PYTHON_LIBRARIES_Development_Main})
-
 set_target_properties(xeus-clang-repl PROPERTIES
                       PUBLIC_HEADER "${XEUS_CLANG_REPL_HEADERS}"
                       COMPILE_DEFINITIONS "XEUS_CLANG_REPL_EXPORTS"
                       PREFIX ""
                       VERSION ${${PROJECT_NAME}_VERSION}
                       SOVERSION ${XEUS_CLANG_REPL_VERSION_MAJOR}
-                      OUTPUT_NAME "libxeus-clang-repl")
-
+                      OUTPUT_NAME "libxeus-clang-repl"
+                      CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
 ################
 # Installation #
