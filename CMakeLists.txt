@@ -50,8 +50,9 @@ if (LLVM_REQUIRED_VERSION)
 endif() 
 
 find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
-find_package(cppzmq ${cppzmq_REQUIRED_VERSION} REQUIRED)
+find_package(cppzmq REQUIRED CONFIG)
 find_package(pugixml REQUIRED)
+
 
 #find_package(LLVM REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}" NO_DEFAULT_PATH)
 #find_package(Clang REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}/lib/cmake/clang/" NO_DEFAULT_PATH)
@@ -274,3 +275,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${PROJECT_NAME}Config.cmake
 install(EXPORT ${PROJECT_NAME}-targets
         FILE ${PROJECT_NAME}Targets.cmake
         DESTINATION ${XEUS_CLANG_REPL_CMAKECONFIG_INSTALL_DIR})
+
+# Documentation
+if(XEUS_CLANG_REPL_INCLUDE_DOCS)
+  add_subdirectory(docs)
+endif()
