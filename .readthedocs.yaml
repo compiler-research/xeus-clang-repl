@@ -1,0 +1,18 @@
+version: 2
+
+sphinx:
+  configuration: docs/conf.py
+  builder: html
+
+build:
+  os: "ubuntu-22.04"
+  tools:
+    python: "mambaforge-4.10"
+  apt_packages:
+    - clang-14
+    - libclang-14-dev
+    - llvm-14-dev
+    - llvm-14-tools
+
+conda:
+  environment: docs/environment.yml

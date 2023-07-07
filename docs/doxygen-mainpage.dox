@@ -1,0 +1,18 @@
+/// @mainpage Xeus-Clang-Repl
+///
+/// @section main_intro Introduction
+/// 
+/// xeus-clang-repl is a Jupyter kernel for C++ based on the C++ interpreter clang-repl and 
+/// the native implementation of the Jupyter protocol xeus.
+///
+///
+/// This documentation describes the @b internal software that makes 
+/// up Xeus-Clang-Repl, not the @b external use of Xeus-Clang-Repl. There are no complete instructions
+/// here on how to use Xeus-Clang-Repl, only the APIs that make up the software. For 
+/// usage instructions, please see the programmer's guide or reference 
+/// manual.
+///
+/// @section main_caveat Caveat 
+/// This documentation is generated directly from the source code with doxygen. 
+/// Since Xeus-Clang-Repl is constantly under active development, what you're about to
+/// read is out of date!

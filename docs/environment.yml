@@ -1,0 +1,20 @@
+name: xeus-clang-repl
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Build dependencies
+  - cmake
+  - toolchain
+  - pkg-config
+  # Host dependencies
+  - xeus
+  - zeromq
+  - cppzmq
+  - nlohmann_json
+  - xtl
+  - pugixml
+  - libllvm14
+  - cxxopts
