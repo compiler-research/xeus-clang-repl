@@ -36,12 +36,56 @@
 
 namespace xcpp {
 static PyObject *gMainDict = 0;
+
 void pythonexec::startup() {
-  Py_Initialize();
-  gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
-  Py_INCREF(gMainDict);
-  if (!gMainDict)
-    printf("Could not add module __main__");
+    Py_Initialize();
+
+    // Add your custom PYTHONPATH to sys.path
+    std::vector<std::string> customPythonPaths = {
+        "/home/vvassilev/workspace/builds/scratch/cppyy/CPyCppyy/build",
+        "/home/vvassilev/workspace/builds/scratch/cppyy/cppyy-backend/python"
+    };
+    PyObject* sysPath = PySys_GetObject("path");
+    if (sysPath && PyList_Check(sysPath)) {
+        for (const std::string& path : customPythonPaths) {
+            PyObject* pathObj = PyUnicode_FromString(path.c_str());
+            if (pathObj) {
+                PyList_Append(sysPath, pathObj);
+                Py_DECREF(pathObj);
+            }
+        }
+    }
+
+    PyRun_SimpleString("import sys\nprint(sys.path)");
+
+    // Import cppyy module
+    PyObject* cppyyModule = PyImport_ImportModule("cppyy");
+    if (!cppyyModule) {
+        PyErr_Print();
+        Py_Finalize();
+        return; // Handle import error as needed
+    }
+
+    // Retrieve the dictionary of cppyy module
+    PyObject* cppyyDict = PyModule_GetDict(cppyyModule);
+    Py_DECREF(cppyyModule);
+    if (!cppyyDict) {
+        PyErr_Print();
+        Py_Finalize();
+        return; // Handle retrieval error as needed
+    }
+
+    // Add cppyyDict to gMainDict (if needed for further usage)
+    PyDict_Update(gMainDict, cppyyDict);
+
+    // Continue with the rest of your initialization code
+    // ...
+
+    Py_DECREF(cppyyDict);
+    gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
+    Py_INCREF(gMainDict);
+    if (!gMainDict)
+        printf("Could not add module __main__");
 }
 
 xoptions pythonexec::get_options() {

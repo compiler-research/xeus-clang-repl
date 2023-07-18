@@ -47,7 +47,7 @@ configure_file (
 
 set(xeus_REQUIRED_VERSION 1.0.0)
 set(cppzmq_REQUIRED_VERSION 4.3.0)
-set(llvm_REQUIRED_VERSION 14)
+set(llvm_REQUIRED_VERSION 16)
 if (LLVM_REQUIRED_VERSION)
   set(llvm_REQUIRED_VERSION ${LLVM_REQUIRED_VERSION})
 endif()
