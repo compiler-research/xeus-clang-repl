@@ -22,17 +22,6 @@
 #include <vector>
 
 #include "Python.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/TextDiagnosticPrinter.h"
-#define USE_REPL
-#include "llvm/Support/Path.h"
-#include "clang/Interpreter/Compatibility.h"
-#include "clang/Interpreter/InterOp.h"
-//#include "clang/Interpreter/InterOpInterpreter.h"
-#include "llvm/ExecutionEngine/Orc/LLJIT.h"
-#include "llvm/Support/Casting.h"
-#include "llvm/Support/DynamicLibrary.h"
-#include "llvm/Support/TargetSelect.h"
 
 #include "xeus-clang-repl/xbuffer.hpp"
 #include "xeus-clang-repl/xeus_clang-repl_config.hpp"
@@ -46,42 +35,16 @@
 #include "xmagics/pythonexec.hpp"
 
 using namespace std::placeholders;
-std::string DiagnosticOutput;
-llvm::raw_string_ostream DiagnosticsOS(DiagnosticOutput);
-auto DiagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(
-    DiagnosticsOS, new clang::DiagnosticOptions());
-
-///\returns true on error.
-static bool ProcessCode(const std::string &code,
-                        llvm::raw_string_ostream &error_stream) {
-  if (xcpp::pythonexec::python_check_for_initialisation()) {
-    std::string newPythonInts =
-        xcpp::pythonexec::transfer_python_ints_utility();
-    InterOp::Process(newPythonInts.c_str());
-    std::string newPythonLists =
-        xcpp::pythonexec::transfer_python_lists_utility();
-    InterOp::Process(newPythonLists.c_str());
-  }
-
-  return InterOp::Process(code.c_str());
-}
 
 using Args = std::vector<const char *>;
-void* createInterpreter(const Args &ExtraArgs = {},
-			clang::DiagnosticConsumer *Client = nullptr) {
-  // llvm::InitializeNativeTarget();
-  // llvm::InitializeNativeTargetAsmPrinter();
-
+void* createInterpreter(const Args &ExtraArgs = {}) {
   Args ClangArgs = {"-Xclang", "-emit-llvm-only",
                     "-Xclang", "-diagnostic-log-file",
                     "-Xclang", "-",
                     "-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
-  compat::Interpreter* Interp = static_cast<compat::Interpreter*>(InterOp::CreateInterpreter(ClangArgs));
-  //auto CI = cantFail(clang::IncrementalCompilerBuilder::create(ClangArgs));
-  if (Client)
-    Interp->getCompilerInstance()->getDiagnostics().setClient(Client, /*ShouldOwnClient=*/false);
-  return Interp;
+  //return InterOp::CreateInterpreter(ClangArgs);
+  return InterOp::CreateInterpreter();
 }
 
 namespace xcpp {
@@ -94,7 +57,7 @@ interpreter::interpreter(int argc, const char *const *argv)
       xmagics(), p_cout_strbuf(nullptr), p_cerr_strbuf(nullptr),
       m_cout_buffer(std::bind(&interpreter::publish_stdout, this, _1)),
       m_cerr_buffer(std::bind(&interpreter::publish_stderr, this, _1)) {
-  createInterpreter(Args(argv + 1, argv + argc), DiagPrinter.get());
+  createInterpreter(Args(argv + 1, argv + argc)/*, DiagPrinter.get()*/);
   // Bootstrap the execution engine
   redirect_output();
   init_preamble();
@@ -145,9 +108,9 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
   for (const auto &block : blocks) {
     // Attempt normal evaluation
     std::string error_message;
-    llvm::raw_string_ostream error_stream(error_message);
+    std::stringstream error_stream(error_message);
     try {
-      compilation_result = ProcessCode(block, error_stream);
+      compilation_result = InterOp::Process(block.c_str());
       redirect_output();
     }
 
@@ -171,7 +134,7 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
     // If an error was encountered, don't attempt further execution
     if (errorlevel) {
       error_stream.str().clear();
-      DiagnosticsOS.str().clear();
+      //DiagnosticsOS.str().clear();
       break;
     }
   }
@@ -402,53 +365,52 @@ static int fprintf_jit(std::FILE *stream, const char *format, ...) {
 
   return ret;
 }
+// static void injectSymbol(llvm::StringRef LinkerMangledName,
+//                          llvm::JITTargetAddress KnownAddr,
+//                          clang::Interpreter &Interp) {
+//   using namespace llvm;
+//   using namespace llvm::orc;
 
-static void injectSymbol(llvm::StringRef LinkerMangledName,
-                         llvm::JITTargetAddress KnownAddr,
-                         clang::Interpreter &Interp) {
-  using namespace llvm;
-  using namespace llvm::orc;
+//   auto Symbol =
+//       Interp.getSymbolAddress(LinkerMangledName); //, /*IncludeFromHost=*/true);
+//   if (Error Err = Symbol.takeError()) {
+//     logAllUnhandledErrors(std::move(Err), errs(),
+//                           "[IncrementalJIT] define() failed1: ");
+//     return;
+//   }
 
-  auto Symbol =
-      Interp.getSymbolAddress(LinkerMangledName); //, /*IncludeFromHost=*/true);
-  if (Error Err = Symbol.takeError()) {
-    logAllUnhandledErrors(std::move(Err), errs(),
-                          "[IncrementalJIT] define() failed1: ");
-    return;
-  }
+//   // Nothing to define, we are redefining the same function. FIXME: Diagnose.
+// //  if (*Symbol && (JITTargetAddress)*Symbol == KnownAddr)
+//   if (*Symbol && (*Symbol).getValue() == KnownAddr)
+//     return;
 
-  // Nothing to define, we are redefining the same function. FIXME: Diagnose.
-//  if (*Symbol && (JITTargetAddress)*Symbol == KnownAddr)
-  if (*Symbol && (*Symbol).getValue() == KnownAddr)
-    return;
+//   // Let's inject it
+//   bool Inserted;
+//   SymbolMap::iterator It;
+//   static llvm::orc::SymbolMap m_InjectedSymbols;
 
-  // Let's inject it
-  bool Inserted;
-  SymbolMap::iterator It;
-  static llvm::orc::SymbolMap m_InjectedSymbols;
+//   llvm::orc::LLJIT &Jit = *Interp.getExecutionEngine();
+//   JITDylib &DyLib = Jit.getMainJITDylib();
 
-  llvm::orc::LLJIT &Jit = *Interp.getExecutionEngine();
-  JITDylib &DyLib = Jit.getMainJITDylib();
+//   std::tie(It, Inserted) = m_InjectedSymbols.try_emplace(
+//       Jit.getExecutionSession().intern(LinkerMangledName),
+//       JITEvaluatedSymbol(KnownAddr, JITSymbolFlags::Exported));
+//   assert(Inserted && "Why wasn't this found in the initial Jit lookup?");
 
-  std::tie(It, Inserted) = m_InjectedSymbols.try_emplace(
-      Jit.getExecutionSession().intern(LinkerMangledName),
-      JITEvaluatedSymbol(KnownAddr, JITSymbolFlags::Exported));
-  assert(Inserted && "Why wasn't this found in the initial Jit lookup?");
+//   // We want to replace a symbol with a custom provided one.
+//   if (Symbol && KnownAddr) {
+//     // The symbol be in the DyLib or in-process.
+//     if (auto Err = DyLib.remove({It->first})) {
+//       logAllUnhandledErrors(std::move(Err), errs(),
+//                             "[IncrementalJIT] define() failed2: ");
+//       return;
+//     }
+//   }
 
-  // We want to replace a symbol with a custom provided one.
-  if (Symbol && KnownAddr) {
-    // The symbol be in the DyLib or in-process.
-    if (auto Err = DyLib.remove({It->first})) {
-      logAllUnhandledErrors(std::move(Err), errs(),
-                            "[IncrementalJIT] define() failed2: ");
-      return;
-    }
-  }
-
-  if (Error Err = DyLib.define(absoluteSymbols({*It})))
-    logAllUnhandledErrors(std::move(Err), errs(),
-                          "[IncrementalJIT] define() failed3: ");
-}
+//   if (Error Err = DyLib.define(absoluteSymbols({*It})))
+//     logAllUnhandledErrors(std::move(Err), errs(),
+//                           "[IncrementalJIT] define() failed3: ");
+// }
 
 void interpreter::redirect_output() {
   p_cout_strbuf = std::cout.rdbuf();

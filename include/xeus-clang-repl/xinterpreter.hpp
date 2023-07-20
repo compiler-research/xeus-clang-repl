@@ -15,9 +15,7 @@
 #ifndef XEUS_CLANG_REPL_INTERPRETER_HPP
 #define XEUS_CLANG_REPL_INTERPRETER_HPP
 
-#include "clang/Interpreter/Compatibility.h"
 #include "clang/Interpreter/InterOp.h"
-#include "clang/Interpreter/Interpreter.h"
 
 #include "nlohmann/json.hpp"
 

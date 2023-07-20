@@ -23,8 +23,13 @@ message(STATUS "Building xeus-clang-repl v${${PROJECT_NAME}_VERSION}")
 
 include(GNUInstallDirs)
 
-set(CMAKE_LD_LIBRARY_PATH "/home/jovyan/cppyy-backend/python/cppyy_backend/lib:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/build/lib")
-set(CMAKE_PYTHONPATH "/home/jovyan/CPyCppyy/build:/home/jovyan/cppyy-backend/python")
+message(STATUS "Env CPLUS_INCLUDE_PATH=$ENV{CPLUS_INCLUDE_PATH}")
+message(STATUS "Env LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}")
+message(STATUS "Env PYTHONPATH=$ENV{PYTHONPATH}")
+
+set(CMAKE_CPLUS_INCLUDE_PATH "$ENV{CPLUS_INCLUDE_PATH}")
+set(CMAKE_LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
+set(CMAKE_PYTHONPATH "$ENV{PYTHONPATH}")
 
 configure_file (
     "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp11/kernel.json.in"
@@ -47,22 +52,10 @@ configure_file (
 
 set(xeus_REQUIRED_VERSION 1.0.0)
 set(cppzmq_REQUIRED_VERSION 4.3.0)
-set(llvm_REQUIRED_VERSION 16)
-if (LLVM_REQUIRED_VERSION)
-  set(llvm_REQUIRED_VERSION ${LLVM_REQUIRED_VERSION})
-endif()
 
 find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
 find_package(cppzmq REQUIRED CONFIG)
 find_package(pugixml REQUIRED)
-
-
-#find_package(LLVM REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}" NO_DEFAULT_PATH)
-#find_package(Clang REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}/lib/cmake/clang/" NO_DEFAULT_PATH)
-find_package(LLVM ${llvm_REQUIRED_VERSION} REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}")
-find_package(Clang REQUIRED CONFIG PATHS "${LLVM_BINARY_DIR}/lib/cmake/clang/" "${LLVM_CONFIG_EXTRA_PATH_HINTS}/lib/cmake/clang/" NO_DEFAULT_PATH)
-include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
-link_directories(${LLVM_LIBRARY_DIR})
 
 #InterOp
 #TODO: Make InterOp cmake package and use find_package
@@ -80,36 +73,6 @@ message(STATUS "InterOp include location: ${INTEROP_DIR}/../include")
 # Before including llvm suppress the option() honors normal variables warning.
 if(POLICY CMP0077)
   cmake_policy(SET CMP0077 NEW)
-endif()
-
-include(AddLLVM)
-include(HandleLLVMOptions)
-
-add_definitions(-DCLANG_RESOURCE_DIR="${LLVM_BINARY_DIR}/lib/clang/${LLVM_PACKAGE_VERSION}")
-
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
-include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
-separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
-add_definitions(${LLVM_DEFINITIONS_LIST})
-
-# If the llvm sources are present add them with higher priority.
-if (LLVM_BUILD_MAIN_SRC_DIR)
-  # LLVM_INCLUDE_DIRS contains the include paths to both LLVM's source and
-  # build directories. Since we cannot just include ClangConfig.cmake (see
-  # fixme above) we have to do a little more work to get the right include
-  # paths for clang.
-  #
-  # FIXME: We only support in-tree builds of clang, that is clang being built
-  # in llvm_src/tools/clang.
-  include_directories(SYSTEM ${LLVM_BUILD_MAIN_SRC_DIR}/tools/clang/include/)
-
-  if (NOT LLVM_BUILD_BINARY_DIR)
-    message(FATAL "LLVM_BUILD_* values should be available for the build tree")
-  endif()
-
-  include_directories(SYSTEM ${LLVM_BUILD_BINARY_DIR}/tools/clang/include/)
 endif()
 
 find_package(cxxopts REQUIRED)
@@ -212,6 +175,7 @@ set(LLVM_REQUIRES_RTTI ON)
 add_library(xeus-clang-repl SHARED ${XEUS_CLANG_REPL_SRC} ${XEUS_CLANG_REPL_HEADERS})
 
 # xcpp is the target for the kernel executable
+set(CMAKE_CXX_STANDARD 14) # FIXME: Be smarter and check if the standard was defined outside.
 add_executable(xcpp ${XCPP_SRC})
 set_target_properties(xcpp PROPERTIES
   ENABLE_EXPORTS 1
