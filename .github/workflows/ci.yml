@@ -22,7 +22,8 @@ jobs:
       matrix:
         include:
           - name: ubu22-gcc12-clang16
-            os: ubuntu-22.04
+            #os: ubuntu-22.04
+            os: ubuntu22/20230710.1
             compiler: gcc-12
             clang-runtime: '16'
     steps:
@@ -128,6 +129,9 @@ jobs:
       if: runner.os == 'Linux' #TODO: exclude on release
       run: |
         # Install xeus-clang-repl deps
+        sudo apt-get update --yes
+        sudo apt-get install --yes --no-install-recommends ncurses-dev libtinfo-dev libtinfo5
+        #
         conda update --all
         conda install -y -q -c conda-forge \
           'xeus>=2.0,<3.0' \
@@ -170,7 +174,7 @@ jobs:
     - name: Build xeus-clang-repl on Linux
       if: runner.os == 'Linux' #TODO: exclude on release
       run: |
-        # Build and Install xeus-clang-repl
+        ## Build and Install xeus-clang-repl
         mkdir build
         cd build
         PP=$KERNEL_PYTHON_PREFIX

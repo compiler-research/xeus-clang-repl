@@ -57,9 +57,9 @@ interpreter_ptr build_interpreter(int argc, char **argv) {
   for (int i = 1; i < argc; i++) {
     interpreter_argv[i] = argv[i];
   }
-  std::string resource_dir =
-      "-resource-dir=" + std::string(CLANG_RESOURCE_DIR);
-  interpreter_argv[interpreter_argc - 1] = resource_dir.c_str();
+  // std::string resource_dir =
+  //     "-resource-dir=" + std::string(CLANG_RESOURCE_DIR);
+  // interpreter_argv[interpreter_argc - 1] = resource_dir.c_str();
 
   interpreter_ptr interp_ptr = interpreter_ptr(
       new xcpp::interpreter(interpreter_argc, interpreter_argv));

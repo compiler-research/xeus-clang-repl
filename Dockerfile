@@ -38,6 +38,8 @@ RUN apt-get update --yes && \
     git \
     nano-tiny \
     less \
+    gdb valgrind \
+    emacs \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
@@ -92,7 +94,7 @@ RUN mamba install --quiet --yes -c conda-forge \
 EXPOSE 8888
 
 # Configure container startup
-CMD ["start-notebook.sh"]
+CMD ["start-notebook.sh", "--debug", "&>/home/jovyan/log.txt"]
 
 USER root
 
@@ -166,7 +168,9 @@ RUN \
     #
     echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
     export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/build && \
-    export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH && \
+    export VENV=/home/jovyan/.venv && \
+    echo "export VENV=$VENV" >> ~/.profile && \
+    export PATH=$VENV/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
     export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
     #
     # Build CppInterOp
@@ -204,7 +208,7 @@ RUN \
     #
     # setup virtual environment
     python3 -m venv .venv && \
-    source .venv/bin/activate && \
+    source $VENV/bin/activate && \
     # Install CPyCppyy
     git clone https://github.com/compiler-research/CPyCppyy.git && \
     cd CPyCppyy && \
@@ -217,28 +221,30 @@ RUN \
     # Build and Install cppyy
     #
     # source virtual environment
-    source .venv/bin/activate && \
+    source $VENV/bin/activate && \
     # Install cppyy
     git clone https://github.com/compiler-research/cppyy.git && \
     cd cppyy && \
     python -m pip install --upgrade . --no-deps && \
     cd .. && \
     # Run cppyy
-    source .venv/bin/activate && \
-    export PYTHONPATH=$PYTHONPATH:$CPYCPPYY_DIR:$CB_PYTHON_DIR && \
+    source $VENV/bin/activate && \
+    #TODO: Fix cppyy path (/home/jovyan) to path to installed module
+    export PYTHONPATH=$PYTHONPATH:$CPYCPPYY_DIR:$CB_PYTHON_DIR:/home/jovyan && \
     echo "export PYTHONPATH=$PYTHONPATH" >> ~/.profile && \
+    echo "source $VENV/bin/activate" >> ~/.profile && \
     python -c "import cppyy" && \
     #
     # Build and Install xeus-clang-repl
     #
     mkdir build && \
     cd build && \
-    cmake -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DINTEROP_DIR=$INTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
+    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DINTEROP_DIR=$INTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
     cd ..
-    ##
-    ## Build and Install Clad
-    ##
+    #
+    # Build and Install Clad
+    #
     #git clone --depth=1 https://github.com/vgvassilev/clad.git && \
     #cd clad && \
     #mkdir build && \

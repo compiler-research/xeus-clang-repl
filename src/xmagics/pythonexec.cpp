@@ -20,13 +20,6 @@
 
 #include "xmagics/pythonexec.hpp"
 
-#include "clang/Frontend/CompilerInstance.h"
-
-#include "llvm/ExecutionEngine/Orc/LLJIT.h"
-#include "llvm/Support/Casting.h"
-#include "llvm/Support/DynamicLibrary.h"
-#include "llvm/Support/TargetSelect.h"
-
 #include <cstddef>
 #include <fstream>
 #include <iostream>
@@ -39,22 +32,10 @@ static PyObject *gMainDict = 0;
 
 void pythonexec::startup() {
     Py_Initialize();
-
-    // Add your custom PYTHONPATH to sys.path
-    std::vector<std::string> customPythonPaths = {
-        "/home/vvassilev/workspace/builds/scratch/cppyy/CPyCppyy/build",
-        "/home/vvassilev/workspace/builds/scratch/cppyy/cppyy-backend/python"
-    };
-    PyObject* sysPath = PySys_GetObject("path");
-    if (sysPath && PyList_Check(sysPath)) {
-        for (const std::string& path : customPythonPaths) {
-            PyObject* pathObj = PyUnicode_FromString(path.c_str());
-            if (pathObj) {
-                PyList_Append(sysPath, pathObj);
-                Py_DECREF(pathObj);
-            }
-        }
-    }
+    gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
+    Py_INCREF(gMainDict);
+    if (!gMainDict)
+      printf("Could not add module __main__");
 
     PyRun_SimpleString("import sys\nprint(sys.path)");
 
@@ -78,14 +59,7 @@ void pythonexec::startup() {
     // Add cppyyDict to gMainDict (if needed for further usage)
     PyDict_Update(gMainDict, cppyyDict);
 
-    // Continue with the rest of your initialization code
-    // ...
-
     Py_DECREF(cppyyDict);
-    gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
-    Py_INCREF(gMainDict);
-    if (!gMainDict)
-        printf("Could not add module __main__");
 }
 
 xoptions pythonexec::get_options() {
