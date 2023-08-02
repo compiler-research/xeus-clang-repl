@@ -73,9 +73,9 @@ To get started with using `xeus-clang-repl`, The Documentation work is under Dev
 - [clang](https://github.com/llvm/llvm-project/)
 - [cxxopts](https://github.com/jarro2783/cxxopts)
 
-|  `xeus-clang-repl`    | `xtl`           | `clang`   | `pugixml` | `cppzmq` | `cxxopts` | `nlohmann_json` | `dirent` (windows only) |
+|   `xeus-clang-repl`   |       `xtl`     |  `clang`  | `pugixml` | `cppzmq` | `cxxopts` | `nlohmann_json` | `dirent` (windows only) |
 |-----------------------|-----------------|-----------|-----------|----------|-----------|-----------------|-------------------------|
-|   	~0.1.0 		 |  >=0.7.0,<0.8.0 | >=16,<17  | ~1.8.1    | ~4.3.0   | >=3.0.0   | >=3.6.1,<4.0    | >=2.3.2,<3              |
+|   	~0.1.0 		      |  >=0.7.0,<0.8.0 | >=16,<17  | ~1.8.1    | ~4.3.0   |  >=3.0.0  |  >=3.6.1,<4.0   |    >=2.3.2,<3           |
 
 ## License
 
