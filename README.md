@@ -40,9 +40,32 @@ mamba install`xeus-clang-repl` notebook -c conda-forge
 ``` -->
 
 ```bash
-mkdir build && cd build
-cmake ..
-make && make install
+git clone https://github.com/llvm/llvm-project
+
+git checkout -b release/15.0x
+
+git apply patches/llvm/clang15-D127284.patch
+
+mkdir build
+
+cd build
+
+cmake -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ../llvm
+
+make -j n
+
+cd ..
+
+git clone https://github.com/compiler-research/xeus-clang-repl.git
+
+mkdir build
+
+cd build
+
+cmake ../ -DClang_DIR=/usr/lib/llvm-15/build/lib/cmake/clang\
+         -DLLVM_DIR=/usr/lib/llvm-15/build/lib/cmake/llvm
+
+make -j n
 ```
 
 ## Try it online
