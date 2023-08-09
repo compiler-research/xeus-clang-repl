@@ -44,7 +44,7 @@ void* createInterpreter(const Args &ExtraArgs = {}) {
                     "-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
   //return InterOp::CreateInterpreter(ClangArgs);
-  return InterOp::CreateInterpreter();
+  return Cpp::CreateInterpreter();
 }
 
 namespace xcpp {
@@ -110,7 +110,7 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
     std::string error_message;
     std::stringstream error_stream(error_message);
     try {
-      compilation_result = InterOp::Process(block.c_str());
+      compilation_result = Cpp::Process(block.c_str());
       redirect_output();
     }
 
