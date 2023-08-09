@@ -23,7 +23,6 @@ jobs:
         include:
           - name: ubu22-gcc12-clang16
             os: ubuntu-22.04
-            #os: ubuntu22/20230710.1
             compiler: gcc-12
             clang-runtime: '16'
     steps:
