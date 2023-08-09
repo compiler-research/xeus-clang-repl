@@ -245,13 +245,13 @@ RUN \
     #
     # Build and Install Clad
     #
-    #git clone --depth=1 https://github.com/vgvassilev/clad.git && \
-    #cd clad && \
-    #mkdir build && \
-    #cd build && \
-    #cmake .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
-    ##make -j$(nproc --all) && \
-    #make && \
-    #make install && \
-    ## install clad in all exist kernels
-    #for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; done
+    git clone --depth=1 https://github.com/vgvassilev/clad.git && \
+    cd clad && \
+    mkdir build && \
+    cd build && \
+    cmake .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
+    #make -j$(nproc --all) && \
+    make && \
+    make install && \
+    # install clad in all exist kernels
+    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; done
