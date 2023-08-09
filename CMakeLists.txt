@@ -57,15 +57,15 @@ find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
 find_package(cppzmq REQUIRED CONFIG)
 find_package(pugixml REQUIRED)
 
-#InterOp
-#TODO: Make InterOp cmake package and use find_package
-#find_package(InterOp REQUIRED CONFIG PATHS "${INTEROP_DIR}")
-add_library(clangInterOp SHARED IMPORTED)
-set_property(TARGET clangInterOp PROPERTY IMPORTED_LOCATION "${INTEROP_DIR}/lib/libclangInterOp.so")
-set_property(TARGET clangInterOp PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${INTEROP_DIR}/../include")
+#CppInterOp
+#TODO: Make CppInterOp cmake package and use find_package
+#find_package(CppInterOp REQUIRED CONFIG PATHS "${CPPINTEROP_DIR}")
+add_library(clangCppInterOp SHARED IMPORTED)
+set_property(TARGET clangCppInterOp PROPERTY IMPORTED_LOCATION "${CPPINTEROP_DIR}/lib/libclangCppInterOp.so")
+set_property(TARGET clangCppInterOp PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CPPINTEROP_DIR}/../include")
 #
-message(STATUS "InterOp Imported location: ${INTEROP_DIR}/lib/libclangInterOp.so")
-message(STATUS "InterOp include location: ${INTEROP_DIR}/../include")
+message(STATUS "CppInterOp Imported location: ${CPPINTEROP_DIR}/lib/libclangCppInterOp.so")
+message(STATUS "CppInterOp include location: ${CPPINTEROP_DIR}/../include")
 
 
 ###
@@ -110,14 +110,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
             set (CMAKE_CXX_STANDARD 17)
         endif()
         if (CMAKE_CXX_STANDARD LESS 17)
-          message(fatal "LLVM/InterOp requires c++17 or later")
+          message(fatal "LLVM/CppInterOp requires c++17 or later")
         endif()
     elseif (LLVM_VERSION_MAJOR GREATER_EQUAL 13)
         if (NOT CMAKE_CXX_STANDARD)
             set (CMAKE_CXX_STANDARD 14)
         endif()
         if (CMAKE_CXX_STANDARD LESS 14)
-          message(fatal "LLVM/InterOp requires c++14 or later")
+          message(fatal "LLVM/CppInterOp requires c++14 or later")
         endif()
     endif()
 
@@ -184,7 +184,7 @@ set_target_properties(xcpp PROPERTIES
 target_link_libraries(xcpp PUBLIC xeus-clang-repl pthread)
 
 #TODO: We may be need sse RPATH
-#set_target_properties(xcpp clangInterOp PROPERTIES
+#set_target_properties(xcpp clangCppInterOp PROPERTIES
 #    INSTALL_RPATH_USE_LINK_PATH TRUE
 #)
 if(APPLE)
@@ -223,7 +223,7 @@ target_include_directories(xeus-clang-repl SYSTEM
                            PUBLIC
                            $<BUILD_INTERFACE:${XEUS_CLANG-REPL_INCLUDE_DIR}>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(xeus-clang-repl PUBLIC clangInterOp xeus pugixml cxxopts::cxxopts)
+target_link_libraries(xeus-clang-repl PUBLIC clangCppInterOp xeus pugixml cxxopts::cxxopts)
 
 if(APPLE)
     target_link_libraries(xeus-clang-repl PUBLIC -Wl,-w -Wl,-bind_at_load -Wl,-undefined,dynamic_lookup)

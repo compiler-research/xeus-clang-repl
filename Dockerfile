@@ -178,30 +178,30 @@ RUN \
     export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/../llvm/include:${PATH_TO_LLVM_BUILD}/../clang/include:${PATH_TO_LLVM_BUILD}/include:${PATH_TO_LLVM_BUILD}/tools/clang/include" && \
     git clone https://github.com/compiler-research/CppInterOp.git && \
     export CB_PYTHON_DIR="$PWD/cppyy-backend/python" && \
-    export INTEROP_DIR="$CB_PYTHON_DIR/cppyy_backend" && \
+    export CPPINTEROP_DIR="$CB_PYTHON_DIR/cppyy_backend" && \
     cd CppInterOp && \
     mkdir build && \
     cd build && \
-    export INTEROP_BUILD_DIR=$PWD && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$INTEROP_DIR .. && \
+    export CPPINTEROP_BUILD_DIR=$PWD && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR .. && \
     cmake --build . --parallel $(nproc --all) && \
     #make install -j$(nproc --all) && \
-    export CPLUS_INCLUDE_PATH="$INTEROP_DIR/include:$CPLUS_INCLUDE_PATH" && \
-    export LD_LIBRARY_PATH="$INTEROP_DIR/lib:$LD_LIBRARY_PATH" && \
-    echo "export LD_LIBRARY_PATH=$INTEROP_DIR/lib:$LD_LIBRARY_PATH" >> ~/.profile && \
+    export CPLUS_INCLUDE_PATH="$CPPINTEROP_DIR/include:$CPLUS_INCLUDE_PATH" && \
+    export LD_LIBRARY_PATH="$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" && \
+    echo "export LD_LIBRARY_PATH=$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" >> ~/.profile && \
     cd ../.. && \
     #
     # Build and Install cppyy-backend
     #
     git clone https://github.com/compiler-research/cppyy-backend.git && \
     cd cppyy-backend && \
-    mkdir -p $INTEROP_DIR/lib build && cd build && \
-    # Install InterOp
-    (cd $INTEROP_BUILD_DIR && cmake --build . --target install --parallel $(nproc --all)) && \
+    mkdir -p $CPPINTEROP_DIR/lib build && cd build && \
+    # Install CppInterOp
+    (cd $CPPINTEROP_BUILD_DIR && cmake --build . --target install --parallel $(nproc --all)) && \
     # Build and Install cppyy-backend
-    cmake -DInterOp_DIR=$INTEROP_DIR .. && \
+    cmake -DCppInterOp_DIR=$CPPINTEROP_DIR .. && \
     cmake --build . --parallel $(nproc --all) && \
-    cp libcppyy-backend.so $INTEROP_DIR/lib/ && \
+    cp libcppyy-backend.so $CPPINTEROP_DIR/lib/ && \
     cd ../.. && \
     #
     # Build and Install CPyCppyy
@@ -239,7 +239,7 @@ RUN \
     #
     mkdir build && \
     cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DINTEROP_DIR=$INTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
+    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
     cd ..
     #
