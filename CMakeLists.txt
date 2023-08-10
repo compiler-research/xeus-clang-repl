@@ -228,7 +228,7 @@ target_link_libraries(xeus-clang-repl PUBLIC clangCppInterOp xeus pugixml cxxopt
 if(APPLE)
     target_link_libraries(xeus-clang-repl PUBLIC -Wl,-w -Wl,-bind_at_load -Wl,-undefined,dynamic_lookup)
 elseif(NOT MSVC)
-    target_link_libraries(xeus-clang-repl PUBLIC -Wl,--unresolved-symbols=ignore-in-object-files)
+    target_link_libraries(xeus-clang-repl PUBLIC -Wl,--unresolved-symbols=ignore-all)
 endif()
 
 target_include_directories(xeus-clang-repl PUBLIC ${PYTHON_INCLUDE_DIRS})
