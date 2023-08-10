@@ -33,6 +33,7 @@ RUN apt-get update --yes && \
     unzip \
     curl \
     jq \
+    libomp-dev \
     # Other "our" apt installs (development and testing)
     build-essential \
     git \
@@ -256,3 +257,7 @@ RUN \
     make install && \
     # install clad in all exist kernels
     for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done
+    #
+    # Add OpenMP to all kernels
+    #
+    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do jq '.argv += ["-fopenmp", "-lgomp"] | .display_name += " (with OpenMP)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; done
