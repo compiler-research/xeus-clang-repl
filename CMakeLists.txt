@@ -24,7 +24,6 @@ message(STATUS "Building xeus-clang-repl v${${PROJECT_NAME}_VERSION}")
 # OpenMP config
 find_package(OpenMP)
 if (OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP::OpenMP_CXX=${OpenMP::OpenMP_CXX}")
     message(STATUS "OpenMP_CXX_FLAGS=${OpenMP_CXX_FLAGS}")
     message(STATUS "OpenMP_CXX_LIB_NAMES=${OpenMP_CXX_LIB_NAMES}")
     message(STATUS "OpenMP_gomp_LIBRARY=${OpenMP_gomp_LIBRARY}")
