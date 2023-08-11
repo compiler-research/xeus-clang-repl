@@ -9,7 +9,7 @@
       "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
       "-f",
       "{connection_file}",
-      "-std=c++11"
+      "-std=c++11"@CMAKE_OMP@
   ],
   "language": "C++11"
 }
