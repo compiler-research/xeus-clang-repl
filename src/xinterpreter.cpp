@@ -38,13 +38,11 @@ using namespace std::placeholders;
 
 using Args = std::vector<const char *>;
 void* createInterpreter(const Args &ExtraArgs = {}) {
-  Args ClangArgs = {"-Xclang", "-emit-llvm-only",
-                    "-Xclang", "-diagnostic-log-file",
+  Args ClangArgs = {"-Xclang", "-diagnostic-log-file",
                     "-Xclang", "-",
                     "-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
-  //return InterOp::CreateInterpreter(ClangArgs);
-  return Cpp::CreateInterpreter();
+  return Cpp::CreateInterpreter(ClangArgs);
 }
 
 namespace xcpp {
@@ -57,7 +55,7 @@ interpreter::interpreter(int argc, const char *const *argv)
       xmagics(), p_cout_strbuf(nullptr), p_cerr_strbuf(nullptr),
       m_cout_buffer(std::bind(&interpreter::publish_stdout, this, _1)),
       m_cerr_buffer(std::bind(&interpreter::publish_stderr, this, _1)) {
-  createInterpreter(Args(argv + 1, argv + argc)/*, DiagPrinter.get()*/);
+  createInterpreter(Args(argv + 1, argv + argc - 2));
   // Bootstrap the execution engine
   redirect_output();
   init_preamble();
