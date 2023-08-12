@@ -111,7 +111,6 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
     std::stringstream error_stream(error_message);
     try {
       compilation_result = Cpp::Process(block.c_str());
-      redirect_output();
     }
 
     catch (std::exception &e) {
