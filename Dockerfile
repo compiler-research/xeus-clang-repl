@@ -176,7 +176,9 @@ RUN \
     #
     # Build CppInterOp
     #
-    export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/../llvm/include:${PATH_TO_LLVM_BUILD}/../clang/include:${PATH_TO_LLVM_BUILD}/include:${PATH_TO_LLVM_BUILD}/tools/clang/include" && \
+    sys_incs=$(LC_ALL=C c++ -xc++ -E -v /dev/null 2>&1 | LC_ALL=C sed -ne '/starts here/,/End of/p' | LC_ALL=C sed '/^ /!d' | cut -c2- | tr '\n' ':') && \
+    export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/../llvm/include:${PATH_TO_LLVM_BUILD}/../clang/include:${PATH_TO_LLVM_BUILD}/include:${PATH_TO_LLVM_BUILD}/tools/clang/include:${sys_incs%:}" && \
+    echo $CPLUS_INCLUDE_PATH && \
     git clone https://github.com/compiler-research/CppInterOp.git && \
     export CB_PYTHON_DIR="$PWD/cppyy-backend/python" && \
     export CPPINTEROP_DIR="$CB_PYTHON_DIR/cppyy_backend" && \

@@ -11,7 +11,6 @@
       "{connection_file}",
       "-std=c++14",
       "-fno-exceptions",
-      "-fopenmp=libiomp5",
       "-O2",
       "-v"@CMAKE_OMP@
   ],
