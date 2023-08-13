@@ -38,9 +38,7 @@ using namespace std::placeholders;
 
 using Args = std::vector<const char *>;
 void* createInterpreter(const Args &ExtraArgs = {}) {
-  Args ClangArgs = {"-Xclang", "-diagnostic-log-file",
-                    "-Xclang", "-",
-                    "-xc++"};
+  Args ClangArgs = {"-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
   return Cpp::CreateInterpreter(ClangArgs);
 }
@@ -56,13 +54,89 @@ interpreter::interpreter(int argc, const char *const *argv)
       m_cout_buffer(std::bind(&interpreter::publish_stdout, this, _1)),
       m_cerr_buffer(std::bind(&interpreter::publish_stderr, this, _1)) {
   createInterpreter(Args(argv + 1, argv + argc - 2));
-  // Bootstrap the execution engine
   redirect_output();
+  // Bootstrap the execution engine
   init_preamble();
   init_magic();
 }
 
 interpreter::~interpreter() { restore_output(); }
+
+size_t GetFileSize(FILE* file) {
+    fseek(file, 0, SEEK_END);
+    return static_cast<size_t>(ftell(file));
+  }
+
+std::string ReadEntireFile(FILE* file) {
+    const size_t file_size = GetFileSize(file);
+    char* const buffer = new char[file_size];
+  
+    size_t bytes_last_read = 0;  // # of bytes read in the last fread()
+    size_t bytes_read = 0;       // # of bytes read so far
+  
+    fseek(file, 0, SEEK_SET);
+  
+    // Keeps reading the file until we cannot read further or the
+    // pre-determined file size is reached.
+    do {
+      bytes_last_read = fread(buffer+bytes_read, 1, file_size-bytes_read, file);
+      bytes_read += bytes_last_read;
+    } while (bytes_last_read > 0 && bytes_read < file_size);
+  
+    const std::string content(buffer, bytes_read);
+    delete[] buffer;
+  
+    return content;
+  }
+  
+// Object that captures an output stream (stdout/stderr).
+class CapturedStream {
+public:
+  // The ctor redirects the stream to a temporary file.
+  explicit CapturedStream(int fd) : fd_(fd), uncaptured_fd_(dup(fd)) {
+    char name_template[] = "/tmp/captured_stream.XXXXXX";
+    const int captured_fd = mkstemp(name_template);
+    if (captured_fd == -1) {
+      // GTEST_LOG_(WARNING)
+      // 	<< "Failed to create tmp file " << name_template
+      // 	<< " for test; does the test have access to the /tmp directory?";
+    }
+    filename_ = name_template;
+    fflush(nullptr);
+    dup2(captured_fd, fd_);
+    close(captured_fd);
+  }
+  
+  ~CapturedStream() {
+    remove(filename_.c_str());
+  }
+  
+  std::string GetCapturedString() {
+    if (uncaptured_fd_ != -1) {
+      // Restores the original stream.
+      fflush(nullptr);
+      dup2(uncaptured_fd_, fd_);
+      close(uncaptured_fd_);
+      uncaptured_fd_ = -1;
+    }
+  
+    FILE* const file = fopen(filename_.c_str(), "r");
+    if (file == nullptr) {
+      // GTEST_LOG_(FATAL) << "Failed to open tmp file " << filename_
+      // 			<< " for capturing stream.";
+    }
+    const std::string content = ReadEntireFile(file);
+    fclose(file);
+    return content;
+  }
+private:
+  const int fd_;  // A stream to capture.
+  int uncaptured_fd_;
+  // Name of the temporary file holding the stderr output.
+  ::std::string filename_;
+  
+};
+
 
 nl::json interpreter::execute_request_impl(int /*execution_counter*/,
                                            const std::string &code, bool silent,
@@ -91,24 +165,25 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
   // If silent is set to true, temporarily dismiss all std::cerr and
   // std::cout outputs resulting from `m_interpreter.process`.
 
-  auto cout_strbuf = std::cout.rdbuf();
-  auto cerr_strbuf = std::cerr.rdbuf();
+  // auto cout_strbuf = std::cout.rdbuf();
+  // auto cerr_strbuf = std::cerr.rdbuf();
 
-  if (silent) {
-    auto null = xnull();
-    std::cout.rdbuf(&null);
-    std::cerr.rdbuf(&null);
-  }
+  // if (silent) {
+  //   auto null = xnull();
+  //   std::cout.rdbuf(&null);
+  //   std::cerr.rdbuf(&null);
+  // }
 
   // Scope guard performing the temporary redirection of input requests.
   auto input_guard = input_redirection(allow_stdin);
 
   for (const auto &block : blocks) {
     // Attempt normal evaluation
-    std::string error_message;
-    std::stringstream error_stream(error_message);
+    std::string err;
     try {
+      CapturedStream s = CapturedStream(STDERR_FILENO);
       compilation_result = Cpp::Process(block.c_str());
+      err = s.GetCapturedString();
     }
 
     catch (std::exception &e) {
@@ -125,13 +200,9 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
       errorlevel = 1;
       // send the errors directly to std::cerr
       ename = "";
-      std::cerr << error_stream.str();
-    }
+      std::cerr << "TODO:ERROR HERE:" << err;
 
-    // If an error was encountered, don't attempt further execution
-    if (errorlevel) {
-      error_stream.str().clear();
-      //DiagnosticsOS.str().clear();
+      // If an error was encountered, don't attempt further execution
       break;
     }
   }
@@ -141,10 +212,10 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
   std::cerr << std::flush;
 
   // Reset non-silent output buffers
-  if (silent) {
-    std::cout.rdbuf(cout_strbuf);
-    std::cerr.rdbuf(cerr_strbuf);
-  }
+  // if (silent) {
+  //   std::cout.rdbuf(cout_strbuf);
+  //   std::cerr.rdbuf(cerr_strbuf);
+  // }
 
   // Depending of error level, publish execution result or execution
   // error, and compose execute_reply message.
