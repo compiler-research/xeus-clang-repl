@@ -1,12 +1,12 @@
 Tutorials
------------
+---------
 
 This tutorial emphasises the abilities and usage of Xeus-Clang-REPL. Let's get
 started! The tutorial demonstrates examples of C++ and C++-python integration
 on Jupyter kernels.
 
-1. Install the xeus-clang-repl using conda forge (from source) or run it using the
-Dockerfile.
+1. Install the xeus-clang-repl using conda forge (from source) or run it using 
+   the Dockerfile.
 
 2. Launch the Jupyter Notebook with C++-14, C++-17 kernels available.
 
@@ -48,6 +48,27 @@ Here, we have used variables (`new_var1`, `new_var2`, `new_var3`)
 in python which have been initialised in C++. In the following context, we have
 tried the vice versa as well of using the variables in Python (`new_python_var`)
 which have been defined in C++.
+
+.. image:: integration-demo.png
+   :width: 200px
+   :height: 100px
+   :scale: 400 %
+   :align: center
+
+We are taking another example of working with functions that can be used in
+to call functions defined in C++ in python code with help of magic commands.
+
+.. code-block:: bash
+
+   In[1] #include <iostream>
+
+   In[2] void Cpp() {
+         std::cout << "Hello World C++!" << std::endl;
+         }
+
+   In[3] %%python
+
+   In[4] Cpp()
 
 The project is under development and is subject to changes as C++-Python integration
 within the same Jupyter cell is quite challenging. Please ensure that you have

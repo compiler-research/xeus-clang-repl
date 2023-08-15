@@ -1,5 +1,5 @@
-Reference
----------
+References
+----------
 
 1. `Xeus-cling <https://github.com/jupyter-xeus/xeus-cling>`_
     Xeus-cling offers a similar interactive experience as xeus-clang-repl but uses 

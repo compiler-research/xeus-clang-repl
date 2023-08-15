@@ -57,13 +57,6 @@ find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
 find_package(cppzmq REQUIRED CONFIG)
 find_package(pugixml REQUIRED)
 
-#find_package(LLVM REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}" NO_DEFAULT_PATH)
-#find_package(Clang REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}/lib/cmake/clang/" NO_DEFAULT_PATH)
-find_package(LLVM ${llvm_REQUIRED_VERSION} REQUIRED CONFIG PATHS "${LLVM_CONFIG_EXTRA_PATH_HINTS}")
-find_package(Clang REQUIRED CONFIG PATHS "${LLVM_BINARY_DIR}/lib/cmake/clang/" "${LLVM_CONFIG_EXTRA_PATH_HINTS}/lib/cmake/clang/" NO_DEFAULT_PATH)
-include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
-link_directories(${LLVM_LIBRARY_DIR})
-
 #CppInterOp
 #TODO: Make CppInterOp cmake package and use find_package
 #find_package(CppInterOp REQUIRED CONFIG PATHS "${CPPINTEROP_DIR}")
@@ -74,6 +67,8 @@ set_property(TARGET clangCppInterOp PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CP
 message(STATUS "CppInterOp Imported location: ${CPPINTEROP_DIR}/lib/libclangCppInterOp.so")
 message(STATUS "CppInterOp include location: ${CPPINTEROP_DIR}/../include")
 
+
+###
 
 # Before including llvm suppress the option() honors normal variables warning.
 if(POLICY CMP0077)
