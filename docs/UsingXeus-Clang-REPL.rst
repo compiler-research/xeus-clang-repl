@@ -13,4 +13,3 @@ Using xeus-clang-repl
   execution for different languages. We use these features to run Python and C++
   code in separate cells to achieve interactive communication between them.
 
-

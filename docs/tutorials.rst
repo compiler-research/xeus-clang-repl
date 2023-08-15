@@ -1,5 +1,5 @@
 Tutorials
----------
+-----------
 
 This tutorial emphasises the abilities and usage of Xeus-Clang-REPL. Let's get
 started! The tutorial demonstrates examples of C++ and C++-python integration

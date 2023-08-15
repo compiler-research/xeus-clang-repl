@@ -1,5 +1,10 @@
 {
   "display_name": "C++14",
+  "env": {
+      "CPLUS_INCLUDE_PATH":"@CMAKE_CPLUS_INCLUDE_PATH@",
+      "LD_LIBRARY_PATH":"@CMAKE_LD_LIBRARY_PATH@",
+      "PYTHONPATH":"@CMAKE_PYTHONPATH@"
+  },
   "argv": [
       "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
       "-f",

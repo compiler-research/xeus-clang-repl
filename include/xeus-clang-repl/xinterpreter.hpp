@@ -15,7 +15,7 @@
 #ifndef XEUS_CLANG_REPL_INTERPRETER_HPP
 #define XEUS_CLANG_REPL_INTERPRETER_HPP
 
-#include "clang/Interpreter/Interpreter.h"
+#include "clang/Interpreter/CppInterOp.h"
 
 #include "nlohmann/json.hpp"
 
@@ -72,7 +72,6 @@ private:
 
   std::string get_stdopt(int argc, const char *const *argv);
 
-  std::unique_ptr<clang::Interpreter> m_interpreter;
   std::string m_version;
 
   xmagics_manager xmagics;

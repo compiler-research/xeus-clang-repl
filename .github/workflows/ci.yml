@@ -21,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: ubu22-gcc12-clang15
+          - name: ubu22-gcc12-clang16
             os: ubuntu-22.04
             compiler: gcc-12
-            clang-runtime: '15'
+            clang-runtime: '16'
     steps:
     - uses: actions/checkout@v3
       with:
@@ -79,8 +79,8 @@ jobs:
         git clone --depth=1 --branch "release/${{ matrix.clang-runtime }}.x" --single-branch https://github.com/llvm/llvm-project.git clang-dev
         cd clang-dev
         # Apply patches
-        echo "Apply clang${{ matrix.clang-runtime }}-*.patch patches"
-        [ -f ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch ] && git apply ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch
+        echo "Apply clang${{ matrix.clang-runtime }}-*.patch patches:"
+        compgen -G "../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch" > /dev/null && find ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch -printf "%f\n" && git apply ../patches/llvm/clang${{ matrix.clang-runtime }}-*.patch
         # Build clang-dev
         mkdir build
         mkdir inst
@@ -128,6 +128,9 @@ jobs:
       if: runner.os == 'Linux' #TODO: exclude on release
       run: |
         # Install xeus-clang-repl deps
+        sudo apt-get update --yes
+        sudo apt-get install --yes --no-install-recommends ncurses-dev libtinfo-dev libtinfo5
+        #
         conda update --all
         conda install -y -q -c conda-forge \
           'xeus>=2.0,<3.0' \
@@ -139,17 +142,50 @@ jobs:
           libuuid \
           pytest \
           jupyter_kernel_test
+    - name: Build and Install CppInterOp on Linux
+      if: runner.os == 'Linux'
+      run: |
+        # Build CppInterOp next to cling and llvm-project.
+        LLVM_DIR="$(realpath clang-dev)"
+        LLVM_BUILD_DIR="$(realpath clang-dev/build)"
+        CPLUS_INCLUDE_PATH="${LLVM_DIR}/llvm/include:${LLVM_DIR}/clang/include:${LLVM_BUILD_DIR}/include:${LLVM_BUILD_DIR}/tools/clang/include"
+        git clone https://github.com/compiler-research/CppInterOp.git
+        export CPPINTEROP_DIR=$PWD/cppyy-backend/python/cppyy_backend/
+        cd CppInterOp
+        mkdir build
+        cd build
+        export CPPINTEROP_BUILD_DIR=$PWD
+        cmake -DCMAKE_BUILD_TYPE=Release  \
+                -DUSE_CLING=OFF             \
+                -DUSE_REPL=ON               \
+                -DLLVM_DIR=$LLVM_BUILD_DIR  \
+                -DLLVM_USE_LINKER=gold       \
+                -DBUILD_SHARED_LIBS=ON      \
+                -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR \
+                ../
+        cmake --build . --parallel $(nproc --all)
+        cd ../..
+        # We need CPPINTEROP_DIR, LLVM_BUILD_DIR and CPLUS_INCLUDE_PATH later
+        echo "CPPINTEROP_DIR=$CPPINTEROP_DIR" >> $GITHUB_ENV
+        echo "CPPINTEROP_BUILD_DIR=$CPPINTEROP_BUILD_DIR" >> $GITHUB_ENV
+        echo "LLVM_BUILD_DIR=$LLVM_BUILD_DIR" >> $GITHUB_ENV
+        echo "CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH" >> $GITHUB_ENV
     - name: Build xeus-clang-repl on Linux
       if: runner.os == 'Linux' #TODO: exclude on release
       run: |
-        # Build and Install xeus-clang-repl
+        ## Build and Install xeus-clang-repl
         mkdir build
         cd build
         PP=$KERNEL_PYTHON_PREFIX
         if [[ -z "$PP" ]]; then
           PP=$(conda info --base)
         fi
-        cmake -DCMAKE_PREFIX_PATH=$PP -DCMAKE_INSTALL_PREFIX=$PP -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DLLVM_REQUIRED_VERSION=${{ matrix.clang-runtime }} ..
+        cmake -DCMAKE_PREFIX_PATH=$PP -DCMAKE_INSTALL_PREFIX=$PP \
+              -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_DIR=$PATH_TO_LLVM_BUILD \
+              -DLLVM_CONFIG_EXTRA_PATH_HINTS=$PATH_TO_LLVM_BUILD \
+              -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR \
+              -DLLVM_USE_LINKER=gold \
+              -DLLVM_REQUIRED_VERSION=${{ matrix.clang-runtime }} ..
         make install
     - name: Setup tmate session
       if: ${{ failure() }}

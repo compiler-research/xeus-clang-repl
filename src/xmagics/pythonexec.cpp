@@ -20,13 +20,6 @@
 
 #include "xmagics/pythonexec.hpp"
 
-#include "clang/Frontend/CompilerInstance.h"
-
-#include "llvm/ExecutionEngine/Orc/LLJIT.h"
-#include "llvm/Support/Casting.h"
-#include "llvm/Support/DynamicLibrary.h"
-#include "llvm/Support/TargetSelect.h"
-
 #include <cstddef>
 #include <fstream>
 #include <iostream>
@@ -36,12 +29,37 @@
 
 namespace xcpp {
 static PyObject *gMainDict = 0;
+
 void pythonexec::startup() {
-  Py_Initialize();
-  gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
-  Py_INCREF(gMainDict);
-  if (!gMainDict)
-    printf("Could not add module __main__");
+    Py_Initialize();
+    gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
+    Py_INCREF(gMainDict);
+    if (!gMainDict)
+      printf("Could not add module __main__");
+
+    PyRun_SimpleString("import sys\nprint(sys.path)");
+
+    // Import cppyy module
+    PyObject* cppyyModule = PyImport_ImportModule("cppyy");
+    if (!cppyyModule) {
+        PyErr_Print();
+        Py_Finalize();
+        return; // Handle import error as needed
+    }
+
+    // Retrieve the dictionary of cppyy module
+    PyObject* cppyyDict = PyModule_GetDict(cppyyModule);
+    Py_DECREF(cppyyModule);
+    if (!cppyyDict) {
+        PyErr_Print();
+        Py_Finalize();
+        return; // Handle retrieval error as needed
+    }
+
+    // Add cppyyDict to gMainDict (if needed for further usage)
+    PyDict_Update(gMainDict, cppyyDict);
+
+    Py_DECREF(cppyyDict);
 }
 
 xoptions pythonexec::get_options() {
