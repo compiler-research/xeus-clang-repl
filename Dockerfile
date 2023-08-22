@@ -33,7 +33,7 @@ RUN apt-get update --yes && \
     unzip \
     curl \
     jq \
-    libomp-dev \
+    ###libomp-dev \
     # Other "our" apt installs (development and testing)
     build-essential \
     git \
