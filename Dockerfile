@@ -106,7 +106,7 @@ USER ${NB_UID}
 
 ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
     KERNEL_PYTHON_PREFIX=${CONDA_DIR} \
-    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include"
+    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include:/home/jovyan/clad/include"
 
 WORKDIR "${HOME}"
 
@@ -187,7 +187,7 @@ RUN \
     cmake --build . --parallel $(nproc --all) && \
     #make install -j$(nproc --all) && \
     export CPLUS_INCLUDE_PATH="$CPPINTEROP_DIR/include:$CPLUS_INCLUDE_PATH" && \
-    export LD_LIBRARY_PATH="$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" && \
+    export LD_LIBRARY_PATH="${CONDA_DIR}/lib:$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" && \
     echo "export LD_LIBRARY_PATH=$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" >> ~/.profile && \
     cd ../.. && \
     #
@@ -239,19 +239,20 @@ RUN \
     #
     mkdir build && \
     cd build && \
+    export CPLUS_INCLUDE_PATH="/home/jovyan/clad/include:$CPLUS_INCLUDE_PATH" && \
     cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
-    cd ..
+    cd .. && \
     #
     # Build and Install Clad
     #
-    #git clone --depth=1 https://github.com/vgvassilev/clad.git && \
-    #cd clad && \
-    #mkdir build && \
-    #cd build && \
-    #cmake .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=/opt/conda -DLLVM_EXTERNAL_LIT="$(which lit)" && \
-    ##make -j$(nproc --all) && \
-    #make && \
-    #make install && \
-    ## install clad in all exist kernels
-    #for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; done
+    git clone --depth=1 https://github.com/vgvassilev/clad.git && \
+    cd clad && \
+    mkdir build && \
+    cd build && \
+    cmake .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
+    #make -j$(nproc --all) && \
+    make && \
+    make install && \
+    # install clad in all exist kernels
+    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done
