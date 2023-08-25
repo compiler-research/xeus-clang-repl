@@ -85,9 +85,10 @@ jobs:
         mkdir build
         mkdir inst
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS="clang;openmp" -DCMAKE_INSTALL_PREFIX=../inst ../llvm
+        cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_ENABLE_RUNTIMES="openmp" -DCMAKE_INSTALL_PREFIX=../inst ../llvm
         make ClangDriverOptions clang-repl omp openmp-resource-headers -j$(nproc --all)
-        #make install -j$(nproc --all)
+        make install -j$(nproc --all)
+        make clean -j$(nproc --all)
         cd ../..
     - name: Save Cache LLVM/Clang runtime build directory
       uses: actions/cache/save@v3
