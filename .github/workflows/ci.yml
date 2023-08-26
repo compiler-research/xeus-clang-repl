@@ -89,7 +89,9 @@ jobs:
         make ClangDriverOptions clang-repl openmp openmp-resource-headers -j$(nproc --all)
         make install -j$(nproc --all)
         make clean -j$(nproc --all)
-        cd ../..
+        cd ..
+        rm -rf $(find . -maxdepth 1 ! -name "inst" ! -name ".")
+        cd ..
     - name: Save Cache LLVM/Clang runtime build directory
       uses: actions/cache/save@v3
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}

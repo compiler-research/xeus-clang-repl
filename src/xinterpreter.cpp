@@ -105,10 +105,9 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
     // Attempt normal evaluation
     std::string err;
     try {
-      CapturedStream s = CapturedStream(STDERR_FILENO);
       Cpp::BeginStdStreamCapture(Cpp::kStdErr);
       compilation_result = Cpp::Process(block.c_str());
-      err = Cpp.EndStdStreamCapture();
+      err = Cpp::EndStdStreamCapture();
     }
 
     catch (std::exception &e) {
