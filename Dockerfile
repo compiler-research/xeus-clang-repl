@@ -263,4 +263,4 @@ RUN \
     #
     # Add OpenMP to all kernels
     #
-    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += [] | .display_name += " (with OpenMP)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done
+    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fopenmp"] | .display_name += " (with OpenMP)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done

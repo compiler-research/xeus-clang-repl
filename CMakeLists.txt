@@ -22,9 +22,9 @@ message(STATUS "Building xeus-clang-repl v${${PROJECT_NAME}_VERSION}")
 # =============
 
 # OpenMP config
-find_package(OpenMP PATHS "${LLVM_CMAKE_DIR}/lib/cmake/openmp")
-if (OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP: Found.")
+#find_package(OpenMP PATHS "${LLVM_CMAKE_DIR}/lib/cmake/openmp")
+#if (OpenMP_CXX_FOUND)
+#    message(STATUS "OpenMP: Found.")
 #    message(STATUS "OpenMP_CXX_VERSION=${OpenMP_CXX_VERSION}")
 #    message(STATUS "OpenMP_CXX_SPEC_DATE=${OpenMP_CXX_SPEC_DATE}")
 #    message(STATUS "OpenMP_CXX_FLAGS=${OpenMP_CXX_FLAGS}")
@@ -38,11 +38,11 @@ if (OpenMP_CXX_FOUND)
 #    message(STATUS "OpenMP_gomp_LIBRARY=${OpenMP_gomp_LIBRARY}")
 #    message(STATUS "OpenMP_pthread_LIBRARY=${OpenMP_pthread_LIBRARY}")
 #    set(CMAKE_OMP ",\n\"${OpenMP_CXX_FLAGS}\", \"-l${OpenMP_gomp_LIBRARY}\", \"-l${OpenMP_pthread_LIBRARY}\"")
-    set(CMAKE_OMP ",\n\"${OpenMP_CXX_FLAGS}\"")
-else()
-    message(STATUS "OpenMP: Not Found.")
-    set(CMAKE_OMP ",\n\"-fopenmp\"")
-endif()
+#    set(CMAKE_OMP ",\n\"${OpenMP_CXX_FLAGS}\"")
+#else()
+#    message(STATUS "OpenMP: Not Found.")
+#    set(CMAKE_OMP ",\n\"-fopenmp\"")
+#endif()
 
 
 include(GNUInstallDirs)
@@ -56,7 +56,7 @@ message(STATUS "Debug: Replace in kernels")
 message(STATUS "Debug: CMAKE_CPLUS_INCLUDE_PATH=${CMAKE_CPLUS_INCLUDE_PATH}")
 message(STATUS "Debug: CMAKE_LD_LIBRARY_PATH=${CMAKE_LD_LIBRARY_PATH}")
 message(STATUS "Debug: CMAKE_PYTHONPATH=${CMAKE_PYTHONPATH}")
-message(STATUS "Debug: CMAKE_OMP=${CMAKE_OMP}")
+#message(STATUS "Debug: CMAKE_OMP=${CMAKE_OMP}")
 
 configure_file (
     "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp11/kernel.json.in"
