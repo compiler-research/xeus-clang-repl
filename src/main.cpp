@@ -50,20 +50,16 @@ std::string extract_filename(int& argc, char *argv[]) {
 
 using interpreter_ptr = std::unique_ptr<xcpp::interpreter>;
 interpreter_ptr build_interpreter(int argc, char **argv) {
-  int interpreter_argc = argc + 1;
-  const char **interpreter_argv = new const char *[interpreter_argc];
-  interpreter_argv[0] = "xeus-clang-repl";
-  // Copy all arguments in the new array excepting the process name.
+  std::vector<const char*> interpreter_args;
   for (int i = 1; i < argc; i++) {
-    interpreter_argv[i] = argv[i];
+    if (argv[i] == "-f") {
+      i++; // skip the value of -f which is a json file.
+      continue;
+    }
+    interpreter_args.push_back(argv[i]);
   }
-  // std::string resource_dir =
-  //     "-resource-dir=" + std::string(CLANG_RESOURCE_DIR);
-  // interpreter_argv[interpreter_argc - 1] = resource_dir.c_str();
-
   interpreter_ptr interp_ptr = interpreter_ptr(
-      new xcpp::interpreter(interpreter_argc, interpreter_argv));
-  delete[] interpreter_argv;
+       new xcpp::interpreter(interpreter_args.size(), interpreter_args.data()));
   return interp_ptr;
 }
 

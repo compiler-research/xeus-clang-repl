@@ -53,7 +53,7 @@ interpreter::interpreter(int argc, const char *const *argv)
       xmagics(), p_cout_strbuf(nullptr), p_cerr_strbuf(nullptr),
       m_cout_buffer(std::bind(&interpreter::publish_stdout, this, _1)),
       m_cerr_buffer(std::bind(&interpreter::publish_stderr, this, _1)) {
-  createInterpreter(Args(argv + 1, argv + argc - 2));
+  createInterpreter(Args(argv, argv + argc));
   redirect_output();
   // Bootstrap the execution engine
   init_preamble();
