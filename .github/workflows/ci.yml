@@ -98,7 +98,7 @@ jobs:
         key: ${{ steps.cache.outputs.cache-primary-key }}
     - name: Set PATH_TO_LLVM_BUILD etc to Env
       run: |
-        export PATH_TO_LLVM_BUILD="$(realpath clang-dev/build)"
+        export PATH_TO_LLVM_BUILD="$(realpath clang-dev/inst)"
         export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH
         export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
@@ -148,8 +148,9 @@ jobs:
       run: |
         # Build CppInterOp next to cling and llvm-project.
         LLVM_DIR="$(realpath clang-dev)"
-        LLVM_BUILD_DIR="$(realpath clang-dev/build)"
-        CPLUS_INCLUDE_PATH="${LLVM_DIR}/llvm/include:${LLVM_DIR}/clang/include:${LLVM_BUILD_DIR}/include:${LLVM_BUILD_DIR}/tools/clang/include"
+        LLVM_BUILD_DIR="$(realpath clang-dev/inst)"
+        #CPLUS_INCLUDE_PATH="${LLVM_DIR}/llvm/include:${LLVM_DIR}/clang/include:${LLVM_BUILD_DIR}/include:${LLVM_BUILD_DIR}/tools/clang/include"
+        CPLUS_INCLUDE_PATH="${LLVM_BUILD_DIR}/include/llvm:${LLVM_BUILD_DIR}/include/clang"
         git clone https://github.com/compiler-research/CppInterOp.git
         export CPPINTEROP_DIR=$PWD/cppyy-backend/python/cppyy_backend/
         cd CppInterOp
