@@ -168,7 +168,7 @@ RUN \
     popd && \
     #
     echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
-    export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/build && \
+    export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/inst && \
     export VENV=/home/jovyan/.venv && \
     echo "export VENV=$VENV" >> ~/.profile && \
     export PATH=$VENV/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
@@ -177,7 +177,8 @@ RUN \
     # Build CppInterOp
     #
     sys_incs=$(LC_ALL=C c++ -xc++ -E -v /dev/null 2>&1 | LC_ALL=C sed -ne '/starts here/,/End of/p' | LC_ALL=C sed '/^ /!d' | cut -c2- | tr '\n' ':') && \
-    export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/../llvm/include:${PATH_TO_LLVM_BUILD}/../clang/include:${PATH_TO_LLVM_BUILD}/include:${PATH_TO_LLVM_BUILD}/tools/clang/include:${sys_incs%:}" && \
+    #export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/../llvm/include:${PATH_TO_LLVM_BUILD}/../clang/include:${PATH_TO_LLVM_BUILD}/include:${PATH_TO_LLVM_BUILD}/tools/clang/include:${sys_incs%:}"
+    export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/include/llvm:${PATH_TO_LLVM_BUILD}/include/clange:${sys_incs%:}" && \
     echo $CPLUS_INCLUDE_PATH && \
     git clone https://github.com/compiler-research/CppInterOp.git && \
     export CB_PYTHON_DIR="$PWD/cppyy-backend/python" && \
@@ -258,7 +259,7 @@ RUN \
     make && \
     make install && \
     # install clad in all exist kernels
-    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done
+    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done && \
     #
     # Add OpenMP to all kernels
     #
