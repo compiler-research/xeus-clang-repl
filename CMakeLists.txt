@@ -73,6 +73,11 @@ configure_file (
     "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp17/kernel.json"
 )
 
+configure_file (
+    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/clad-xcpp17/kernel.json.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/clad-xcpp17/kernel.json"
+)
+
 ################
 # Dependencies #
 ################
