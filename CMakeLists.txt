@@ -58,25 +58,25 @@ message(STATUS "Debug: CMAKE_LD_LIBRARY_PATH=${CMAKE_LD_LIBRARY_PATH}")
 message(STATUS "Debug: CMAKE_PYTHONPATH=${CMAKE_PYTHONPATH}")
 #message(STATUS "Debug: CMAKE_OMP=${CMAKE_OMP}")
 
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp11/kernel.json.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp11/kernel.json"
-)
+function(configure_kernel kernel)
+    configure_file (
+    "${CMAKE_CURRENT_SOURCE_DIR}/${kernel}/kernel.json.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${kernel}/kernel.json"
+    )
+    file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${kernel}/*.png")
+    foreach(file ${files})
+        configure_file(
+            "${file}"
+            "${CMAKE_CURRENT_BINARY_DIR}/${kernel}/"
+            COPYONLY
+       )
+    endforeach()
+endfunction()
 
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp14/kernel.json.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp14/kernel.json"
-)
-
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp17/kernel.json.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp17/kernel.json"
-)
-
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/clad-xcpp17/kernel.json.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/clad-xcpp17/kernel.json"
-)
+configure_kernel("share/jupyter/kernels/xcpp11")
+configure_kernel("share/jupyter/kernels/xcpp14")
+configure_kernel("share/jupyter/kernels/xcpp17")
+configure_kernel("share/jupyter/kernels/clad-xcpp17")
 
 ################
 # Dependencies #
@@ -305,12 +305,18 @@ set(XCPP_KERNELSPEC_DIR ${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels)
 install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
         DESTINATION ${XJUPYTER_DATA_DIR}
         PATTERN "*.in" EXCLUDE)
+install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
+        DESTINATION ${XJUPYTER_DATA_DIR}
+        FILES_MATCHING PATTERN "*.png")
 
 # Extra path for installing Jupyter kernelspec
 if (XEXTRA_JUPYTER_DATA_DIR)
     install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
             DESTINATION ${XEXTRA_JUPYTER_DATA_DIR}
             PATTERN "*.in" EXCLUDE)
+    install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
+            DESTINATION ${XEXTRA_JUPYTER_DATA_DIR}
+            FILES_MATCHING PATTERN "*.png")
 endif(XEXTRA_JUPYTER_DATA_DIR)
 
 # Makes the project importable from the build directory
