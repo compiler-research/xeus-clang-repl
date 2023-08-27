@@ -85,10 +85,13 @@ jobs:
         mkdir build
         mkdir inst
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_INSTALL_PREFIX=../inst ../llvm
-        make ClangDriverOptions clang-repl -j$(nproc --all)
-        #make install -j$(nproc --all)
-        cd ../..
+        cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_OPTIMIZED_TABLEGEN=On -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_ENABLE_RUNTIMES="openmp" -DCMAKE_INSTALL_PREFIX=../inst ../llvm
+        make ClangDriverOptions clang-repl openmp openmp-resource-headers -j$(nproc --all)
+        make install -j$(nproc --all)
+        make clean -j$(nproc --all)
+        cd ..
+        rm -rf $(find . -maxdepth 1 ! -name "inst" ! -name ".")
+        cd ..
     - name: Save Cache LLVM/Clang runtime build directory
       uses: actions/cache/save@v3
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
@@ -97,7 +100,7 @@ jobs:
         key: ${{ steps.cache.outputs.cache-primary-key }}
     - name: Set PATH_TO_LLVM_BUILD etc to Env
       run: |
-        export PATH_TO_LLVM_BUILD="$(realpath clang-dev/build)"
+        export PATH_TO_LLVM_BUILD="$(realpath clang-dev/inst)"
         export PATH=$PATH_TO_LLVM_BUILD/bin:$PATH
         export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH
         echo "PATH_TO_LLVM_BUILD=$PATH_TO_LLVM_BUILD" >> $GITHUB_ENV
@@ -147,8 +150,9 @@ jobs:
       run: |
         # Build CppInterOp next to cling and llvm-project.
         LLVM_DIR="$(realpath clang-dev)"
-        LLVM_BUILD_DIR="$(realpath clang-dev/build)"
-        CPLUS_INCLUDE_PATH="${LLVM_DIR}/llvm/include:${LLVM_DIR}/clang/include:${LLVM_BUILD_DIR}/include:${LLVM_BUILD_DIR}/tools/clang/include"
+        LLVM_BUILD_DIR="$(realpath clang-dev/inst)"
+        #CPLUS_INCLUDE_PATH="${LLVM_DIR}/llvm/include:${LLVM_DIR}/clang/include:${LLVM_BUILD_DIR}/include:${LLVM_BUILD_DIR}/tools/clang/include"
+        CPLUS_INCLUDE_PATH="${LLVM_BUILD_DIR}/include/llvm:${LLVM_BUILD_DIR}/include/clang"
         git clone https://github.com/compiler-research/CppInterOp.git
         export CPPINTEROP_DIR=$PWD/cppyy-backend/python/cppyy_backend/
         cd CppInterOp

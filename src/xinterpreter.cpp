@@ -38,13 +38,9 @@ using namespace std::placeholders;
 
 using Args = std::vector<const char *>;
 void* createInterpreter(const Args &ExtraArgs = {}) {
-  Args ClangArgs = {"-Xclang", "-emit-llvm-only",
-                    "-Xclang", "-diagnostic-log-file",
-                    "-Xclang", "-",
-                    "-xc++"};
+  Args ClangArgs = {"-xc++"};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
-  //return InterOp::CreateInterpreter(ClangArgs);
-  return Cpp::CreateInterpreter();
+  return Cpp::CreateInterpreter(ClangArgs);
 }
 
 namespace xcpp {
@@ -57,9 +53,9 @@ interpreter::interpreter(int argc, const char *const *argv)
       xmagics(), p_cout_strbuf(nullptr), p_cerr_strbuf(nullptr),
       m_cout_buffer(std::bind(&interpreter::publish_stdout, this, _1)),
       m_cerr_buffer(std::bind(&interpreter::publish_stderr, this, _1)) {
-  createInterpreter(Args(argv + 1, argv + argc)/*, DiagPrinter.get()*/);
-  // Bootstrap the execution engine
+  createInterpreter(Args(argv, argv + argc));
   redirect_output();
+  // Bootstrap the execution engine
   init_preamble();
   init_magic();
 }
@@ -107,10 +103,11 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
 
   for (const auto &block : blocks) {
     // Attempt normal evaluation
-    std::string error_message;
-    std::stringstream error_stream(error_message);
+    std::string err;
     try {
+      Cpp::BeginStdStreamCapture(Cpp::kStdErr);
       compilation_result = Cpp::Process(block.c_str());
+      err = Cpp::EndStdStreamCapture();
     }
 
     catch (std::exception &e) {
@@ -127,13 +124,9 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
       errorlevel = 1;
       // send the errors directly to std::cerr
       ename = "";
-      std::cerr << error_stream.str();
-    }
+      std::cerr << err;
 
-    // If an error was encountered, don't attempt further execution
-    if (errorlevel) {
-      error_stream.str().clear();
-      //DiagnosticsOS.str().clear();
+      // If an error was encountered, don't attempt further execution
       break;
     }
   }

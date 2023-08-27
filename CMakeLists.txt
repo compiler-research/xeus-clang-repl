@@ -21,30 +21,62 @@ message(STATUS "Building xeus-clang-repl v${${PROJECT_NAME}_VERSION}")
 # Configuration
 # =============
 
+# OpenMP config
+#find_package(OpenMP PATHS "${LLVM_CMAKE_DIR}/lib/cmake/openmp")
+#if (OpenMP_CXX_FOUND)
+#    message(STATUS "OpenMP: Found.")
+#    message(STATUS "OpenMP_CXX_VERSION=${OpenMP_CXX_VERSION}")
+#    message(STATUS "OpenMP_CXX_SPEC_DATE=${OpenMP_CXX_SPEC_DATE}")
+#    message(STATUS "OpenMP_CXX_FLAGS=${OpenMP_CXX_FLAGS}")
+#    message(STATUS "OpenMP_CXX_INCLUDE_DIRS=${OpenMP_CXX_INCLUDE_DIRS}")
+#    message(STATUS "OpenMP_CXX_LIB_NAMES=${OpenMP_CXX_LIB_NAMES}")
+#    message(STATUS "OpenMP_CXX_LIBRARIES=${OpenMP_CXX_LIBRARIES}")
+#    set(omp_libs "${OpenMP_CXX_LIB_NAMES}")
+#    list(TRANSFORM omp_libs PREPEND "-l")
+#    list(JOIN omp_libs " " INCLUDE_STRING)
+#    message(STATUS "OpenMP_CXX_LIB_NAMES(params)=${omp_libs}")
+#    message(STATUS "OpenMP_gomp_LIBRARY=${OpenMP_gomp_LIBRARY}")
+#    message(STATUS "OpenMP_pthread_LIBRARY=${OpenMP_pthread_LIBRARY}")
+#    set(CMAKE_OMP ",\n\"${OpenMP_CXX_FLAGS}\", \"-l${OpenMP_gomp_LIBRARY}\", \"-l${OpenMP_pthread_LIBRARY}\"")
+#    set(CMAKE_OMP ",\n\"${OpenMP_CXX_FLAGS}\"")
+#else()
+#    message(STATUS "OpenMP: Not Found.")
+#    set(CMAKE_OMP ",\n\"-fopenmp\"")
+#endif()
+
+
 include(GNUInstallDirs)
 
-message(STATUS "Env CPLUS_INCLUDE_PATH=$ENV{CPLUS_INCLUDE_PATH}")
-message(STATUS "Env LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}")
-message(STATUS "Env PYTHONPATH=$ENV{PYTHONPATH}")
 
 set(CMAKE_CPLUS_INCLUDE_PATH "$ENV{CPLUS_INCLUDE_PATH}")
 set(CMAKE_LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
 set(CMAKE_PYTHONPATH "$ENV{PYTHONPATH}")
 
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp11/kernel.json.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp11/kernel.json"
-)
+message(STATUS "Debug: Replace in kernels")
+message(STATUS "Debug: CMAKE_CPLUS_INCLUDE_PATH=${CMAKE_CPLUS_INCLUDE_PATH}")
+message(STATUS "Debug: CMAKE_LD_LIBRARY_PATH=${CMAKE_LD_LIBRARY_PATH}")
+message(STATUS "Debug: CMAKE_PYTHONPATH=${CMAKE_PYTHONPATH}")
+#message(STATUS "Debug: CMAKE_OMP=${CMAKE_OMP}")
 
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp14/kernel.json.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp14/kernel.json"
-)
+function(configure_kernel kernel)
+    configure_file (
+    "${CMAKE_CURRENT_SOURCE_DIR}/${kernel}/kernel.json.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${kernel}/kernel.json"
+    )
+    file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${kernel}/*.png")
+    foreach(file ${files})
+        configure_file(
+            "${file}"
+            "${CMAKE_CURRENT_BINARY_DIR}/${kernel}/"
+            COPYONLY
+       )
+    endforeach()
+endfunction()
 
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xcpp17/kernel.json.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xcpp17/kernel.json"
-)
+configure_kernel("share/jupyter/kernels/xcpp11")
+configure_kernel("share/jupyter/kernels/xcpp14")
+configure_kernel("share/jupyter/kernels/xcpp17")
+configure_kernel("share/jupyter/kernels/clad-xcpp17")
 
 ################
 # Dependencies #
@@ -273,12 +305,18 @@ set(XCPP_KERNELSPEC_DIR ${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels)
 install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
         DESTINATION ${XJUPYTER_DATA_DIR}
         PATTERN "*.in" EXCLUDE)
+install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
+        DESTINATION ${XJUPYTER_DATA_DIR}
+        FILES_MATCHING PATTERN "*.png")
 
 # Extra path for installing Jupyter kernelspec
 if (XEXTRA_JUPYTER_DATA_DIR)
     install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
             DESTINATION ${XEXTRA_JUPYTER_DATA_DIR}
             PATTERN "*.in" EXCLUDE)
+    install(DIRECTORY ${XCPP_KERNELSPEC_DIR}
+            DESTINATION ${XEXTRA_JUPYTER_DATA_DIR}
+            FILES_MATCHING PATTERN "*.png")
 endif(XEXTRA_JUPYTER_DATA_DIR)
 
 # Makes the project importable from the build directory
