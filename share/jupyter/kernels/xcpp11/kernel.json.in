@@ -2,6 +2,7 @@
   "display_name": "C++11",
   "env": {
       "CPLUS_INCLUDE_PATH":"@CMAKE_CPLUS_INCLUDE_PATH@",
+      "PATH":"@CMAKE_PATH@",
       "LD_LIBRARY_PATH":"@CMAKE_LD_LIBRARY_PATH@",
       "PYTHONPATH":"@CMAKE_PYTHONPATH@"
   },
