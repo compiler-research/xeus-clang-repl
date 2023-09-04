@@ -1,9 +1,12 @@
 #!/bin/bash
 jupyter-repo2docker \
+    --no-run \
     --user-name=jovyan \
     --image-name xeus-clang-repl \
-    --publish 8888 \
     .
+
+#docker run --gpus all --publish 8888:8888 --name xeus-clang-repl-c -i -t xeus-clang-repl "start-notebook.sh"
+docker run --rm --runtime=nvidia --gpus all --publish 8888:8888 --name xeus-clang-repl-c -i -t xeus-clang-repl "start-notebook.sh"
 
 #    --editable \
 #    --ref InterOpIntegration \

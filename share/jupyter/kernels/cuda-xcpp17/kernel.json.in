@@ -1,5 +1,5 @@
 {
-  "display_name": "C++17",
+  "display_name": "CUDA (C++17)",
   "env": {
       "CPLUS_INCLUDE_PATH":"@CMAKE_CPLUS_INCLUDE_PATH@",
       "PATH":"@CMAKE_PATH@",
@@ -10,7 +10,8 @@
       "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
       "-f",
       "{connection_file}",
+      "-cuda",
       "-std=c++17"@CMAKE_OMP@
   ],
-  "language": "C++17"
+  "language": "CUDA"
 }

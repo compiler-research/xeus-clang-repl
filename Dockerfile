@@ -4,7 +4,7 @@
 # https://hub.docker.com/r/jupyter/base-notebook/tags
 ARG BASE_CONTAINER=jupyter/base-notebook
 #ARG BASE_TAG=latest
-#ARG BASE_TAG=ubuntu-22.04
+###ARG BASE_TAG=ubuntu-20.04
 #TODO: Next ARG line(s) is temporary workaround.
 #      Remove them when we can build xeus-clang-repl with Xeus>=3.0
 ARG BASE_TAG=7285848c0a11
@@ -13,6 +13,7 @@ ARG BASE_TAG=7285848c0a11
 FROM $BASE_CONTAINER:$BASE_TAG
 
 LABEL maintainer="Xeus-clang-repl Project"
+#LABEL com.nvidia.volumes.needed="nvidia_driver"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -41,15 +42,18 @@ RUN apt-get update --yes && \
     less \
     gdb valgrind \
     emacs \
+    # CUDA
+    #cuda \
+    nvidia-cuda-toolkit \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen
-    
+
 ENV LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8
-    
+
 # Create alternative for nano -> nano-tiny
 #RUN update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 10
 
@@ -111,6 +115,12 @@ ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
 
 WORKDIR "${HOME}"
 
+# CUDA
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+#ENV NVIDIA_REQUIRE_CUDA "cuda>=12.1.1 driver>=530"
+ENV NVIDIA_REQUIRE_CUDA "cuda>=12.1.1 driver>=530"
+
 ### Post Build
 RUN \
     #
@@ -159,7 +169,12 @@ RUN \
     echo "Debug: Download url (asset) repo info: $download_tag_url" && \
     echo "Debug: Download url (artifact) repo info: $download_url" && \
     echo "Debug: Download url (artifact) forked repo info: $f_download_url" && \
+    ###
+    ### clang-dev gihub only:
     if curl --head --silent --fail -L "$download_tag_url" 1>/dev/null; then curl "$download_tag_url" -L -o "${artifact_name}.tar.bz2"; elif curl --head --silent --fail -L "$download_url" 1>/dev/null; then curl "$download_url" -L -o "${artifact_name}.zip"; else curl "$f_download_url" -L -o "${artifact_name}.zip"; fi && \
+    ### clang-dev local archive only:
+    # mv /home/jovyan/"${artifact_name}.zip" ./&& \
+    ###
     if [[ -f "${artifact_name}.zip" ]]; then unzip "${artifact_name}.zip"; rm "${artifact_name}.zip"; fi && \
     tar xjf ${artifact_name}.tar.bz2 && \
     rm ${artifact_name}.tar.bz2 && \
@@ -170,9 +185,10 @@ RUN \
     echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
     export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/inst && \
     export VENV=/home/jovyan/.venv && \
-    echo "export VENV=$VENV" >> ~/.profile && \
     export PATH=$VENV/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
     export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
+    echo "export VENV=$VENV" >> ~/.profile && \
+    echo "export PATH=$PATH" >> ~/.profile && \
     #
     # Build CppInterOp
     #

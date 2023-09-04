@@ -49,11 +49,13 @@ include(GNUInstallDirs)
 
 
 set(CMAKE_CPLUS_INCLUDE_PATH "$ENV{CPLUS_INCLUDE_PATH}")
+set(CMAKE_PATH "$ENV{PATH}")
 set(CMAKE_LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
 set(CMAKE_PYTHONPATH "$ENV{PYTHONPATH}")
 
 message(STATUS "Debug: Replace in kernels")
 message(STATUS "Debug: CMAKE_CPLUS_INCLUDE_PATH=${CMAKE_CPLUS_INCLUDE_PATH}")
+message(STATUS "Debug: CMAKE_PATH=${CMAKE_PATH}")
 message(STATUS "Debug: CMAKE_LD_LIBRARY_PATH=${CMAKE_LD_LIBRARY_PATH}")
 message(STATUS "Debug: CMAKE_PYTHONPATH=${CMAKE_PYTHONPATH}")
 #message(STATUS "Debug: CMAKE_OMP=${CMAKE_OMP}")
@@ -77,6 +79,7 @@ configure_kernel("share/jupyter/kernels/xcpp11")
 configure_kernel("share/jupyter/kernels/xcpp14")
 configure_kernel("share/jupyter/kernels/xcpp17")
 configure_kernel("share/jupyter/kernels/clad-xcpp17")
+configure_kernel("share/jupyter/kernels/cuda-xcpp17")
 
 ################
 # Dependencies #
