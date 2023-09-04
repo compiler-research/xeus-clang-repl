@@ -38,9 +38,11 @@ using namespace std::placeholders;
 
 using Args = std::vector<const char *>;
 void* createInterpreter(const Args &ExtraArgs = {}) {
-  Args ClangArgs = {"-xc++"};
+  Args ClangArgs = {/*"-xc++"*/};
   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
-  return Cpp::CreateInterpreter(ClangArgs);
+  // FIXME: We should process the kernel input options and conditionally pass
+  // the gpu args here.
+  return Cpp::CreateInterpreter(ClangArgs, {"-cuda"});
 }
 
 namespace xcpp {
