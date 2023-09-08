@@ -80,14 +80,12 @@ void pythonexec::execute(std::string &line, std::string &cell) {
   code += cell;
   if (trim(code).empty())
     return;
-  PyRun_SimpleString(
-      "import sys\nsys.stdout = open('file_of_python_output.txt', 'w')");
-  PyRun_SimpleString(
-      "globals_copy_lists = "
-      "globals().copy()\nfirst_dict_ints={k:globals_copy_lists[k] for k in "
-      "set(globals_copy_lists) if type(globals_copy_lists[k]) == "
-      "int}\nfirst_dict_lists={k:globals_copy_lists[k] for k in "
-      "set(globals_copy_lists) if type(globals_copy_lists[k]) == list}");
+  // PyRun_SimpleString(
+  //     "globals_copy_lists = "
+  //     "globals().copy()\nfirst_dict_ints={k:globals_copy_lists[k] for k in "
+  //     "set(globals_copy_lists) if type(globals_copy_lists[k]) == "
+  //     "int}\nfirst_dict_lists={k:globals_copy_lists[k] for k in "
+  //     "set(globals_copy_lists) if type(globals_copy_lists[k]) == list}");
 
   // PyRun_SimpleString("tmp = globals().copy()\nvars = [f'int {k} = {v};' for
   // k,v in tmp.items() if type(v) == int and not k.startswith('_') and k!='tmp'
@@ -96,13 +94,13 @@ void pythonexec::execute(std::string &line, std::string &cell) {
   // globals().copy()\nnew_ints = ' '.join([f'int {k} = {b[k]};' for k in set(b)
   // - set(first_dict) if type(b[k]) == int])\nprint('new_ints: ', new_ints)");
 
+  Cpp::BeginStdStreamCapture(Cpp::kStdErr);
+  Cpp::BeginStdStreamCapture(Cpp::kStdOut);
+
   PyRun_SimpleString(code.c_str());
-  PyRun_SimpleString("sys.stdout.close()");
-  std::ifstream f("file_of_python_output.txt");
-  if (f.is_open()) {
-    std::cout << f.rdbuf();
-  }
-  f.close();
+
+  std::cout << Cpp::EndStdStreamCapture();
+  std::cerr << Cpp::EndStdStreamCapture();
 
   //   PyObject* objectsRepresentation = PyObject_Repr(gMainDict);
   //   const char* s = PyUnicode_AsUTF8(objectsRepresentation);
