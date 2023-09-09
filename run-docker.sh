@@ -1,4 +1,6 @@
 #!/bin/bash
+docker container run --rm -i hadolint/hadolint hadolint - < Dockerfile
+
 jupyter-repo2docker \
     --no-run \
     --user-name=jovyan \

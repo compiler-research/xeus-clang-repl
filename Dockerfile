@@ -4,18 +4,19 @@
 # https://hub.docker.com/r/jupyter/base-notebook/tags
 ARG BASE_CONTAINER=jupyter/base-notebook
 #ARG BASE_TAG=latest
-###ARG BASE_TAG=ubuntu-20.04
+ARG BASE_TAG=ubuntu-22.04
 #TODO: Next ARG line(s) is temporary workaround.
 #      Remove them when we can build xeus-clang-repl with Xeus>=3.0
-ARG BASE_TAG=7285848c0a11
+#ARG BASE_TAG=7285848c0a11
 #ARG BASE_TAG=2023-01-24
-#ARG BASE_TAG=python-3.10.6
+#ENV VENV_PYTHON_VERSION=3.10.6
+ARG BASE_TAG=python-3.10.6
 FROM $BASE_CONTAINER:$BASE_TAG
 
 LABEL maintainer="Xeus-clang-repl Project"
 #LABEL com.nvidia.volumes.needed="nvidia_driver"
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+SHELL ["/bin/bash", "--login", "-o", "pipefail", "-c"]
 
 USER root
 
@@ -64,16 +65,63 @@ ENV LLVM_REQUIRED_VERSION=16
 # Copy git repository to home directory of container
 COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 
+EXPOSE 8888 8889
+
+# Configure container startup
+CMD ["start-notebook.sh", "--debug", "&>/home/jovyan/log.txt"]
+
+USER root
+
+# Fix start-notebook.sh
+RUN sed -i '2 i source /home/jovyan/.conda.init && conda activate .venv' /usr/local/bin/start-notebook.sh
+
+# Make /home/runner directory and fix permisions
+RUN mkdir /home/runner && fix-permissions /home/runner
+
+# Switch back to jovyan to avoid accidental container runs as root
+USER ${NB_UID}
+
+ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
+    KERNEL_PYTHON_PREFIX=${CONDA_DIR} \
+    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include:/home/jovyan/clad/include:/home/jovyan/CppInterOp/include"
+
+WORKDIR "${HOME}"
+
+# CUDA
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NVIDIA_REQUIRE_CUDA "cuda>=12.1.1 driver>=530"
+
+# VENV
+
 # Jupyter Notebook, Lab, and Hub are installed in base image
 # ReGenerate a notebook server config
 # Cleanup temporary files
 # Correct permissions
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
-WORKDIR /tmp
 #RUN mamba update --all --quiet --yes -c conda-forge && \
-RUN mamba install --quiet --yes -c conda-forge \
-    # notebook,jpyterhub, jupyterlab are inherited from base-notebook container image
+RUN \
+    set -x && \
+    # setup virtual environment
+    mamba create -y -n .venv python=3.10.6 && \
+    #
+    #echo "echo \"@ @ @  PROFILE @ @ @ \"" >> ~/.profile && \
+    #echo "echo \"@ @ @  BASHRC @ @ @ \"" >> /home/jovyan/.bashrc && \
+    mv /home/jovyan/.bashrc /home/jovyan/.bashrc.tmp && \
+    touch /home/jovyan/.bashrc && \
+    conda init bash && \
+    mv /home/jovyan/.bashrc /home/jovyan/.conda.init && \
+    mv /home/jovyan/.bashrc.tmp /home/jovyan/.bashrc && \
+    conda init bash && \
+    echo "source /home/jovyan/.conda.init && conda activate .venv" >> /home/jovyan/.bashrc && \
+    #
+    source /home/jovyan/.conda.init && \
+    conda activate .venv && \
+    fix-permissions "${CONDA_DIR}" && \
+    #
+    mamba install --quiet --yes -c conda-forge \
+    # notebook, jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
     cmake \
     #"clangdev=$LLVM_REQUIRED_VERSION" \
@@ -88,6 +136,7 @@ RUN mamba install --quiet --yes -c conda-forge \
     pytest \
     jupyter_kernel_test \
     && \
+    #rm /home/jovyan/.jupyter/jupyter_notebook_config.py && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
     npm cache clean --force && \
@@ -96,38 +145,17 @@ RUN mamba install --quiet --yes -c conda-forge \
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}"
 
-EXPOSE 8888
-
-# Configure container startup
-CMD ["start-notebook.sh", "--debug", "&>/home/jovyan/log.txt"]
-
-USER root
-
-# Make /home/runner directory and fix permisions
-RUN mkdir /home/runner && fix-permissions /home/runner
-
-# Switch back to jovyan to avoid accidental container runs as root
-USER ${NB_UID}
-
-ENV NB_PYTHON_PREFIX=${CONDA_DIR} \
-    KERNEL_PYTHON_PREFIX=${CONDA_DIR} \
-    CPLUS_INCLUDE_PATH="${CONDA_DIR}/include:/home/${NB_USER}/include:/home/runner/work/xeus-clang-repl/xeus-clang-repl/clang-dev/clang/include:/home/jovyan/clad/include"
-
-WORKDIR "${HOME}"
-
-# CUDA
-ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
-#ENV NVIDIA_REQUIRE_CUDA "cuda>=12.1.1 driver>=530"
-ENV NVIDIA_REQUIRE_CUDA "cuda>=12.1.1 driver>=530"
-
 ### Post Build
 RUN \
+    set -x && \
+    source /home/jovyan/.conda.init && \
+    conda activate .venv && \
+    #
+    artifact_name="clang-dev" && \
     #
     # Install clang-dev from GH Artifact or Release asset
     #
-    artifact_name="clang-dev" && \
-    git_remote_origin_url=$(git config --get remote.origin.url) && \
+    echo $PWD && git_remote_origin_url=$(git config --get remote.origin.url) && \
     echo "Debug: Remote origin url: $git_remote_origin_url" && \
     arr=(${git_remote_origin_url//\// }) && \
     gh_repo_owner=${arr[2]} && \
@@ -138,21 +166,32 @@ RUN \
     gh_f_repo_name=${gh_repo_name} && \
     h=$(git rev-parse HEAD) && \
     echo "Debug: Head h: $h" && \
-    br=$(git branch) && \
+    br=$(git rev-parse --abbrev-ref HEAD) && \
     echo "Debug: Branch br: $br" && \
-    arr1=$(git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$') && \
+    #FIXME: if `$h` is not pushed upstream this fails. We should just diagnose and move on.
+    #git show-ref --head && echo $? && \
+    #git show-ref --head | grep "$h" && echo $? && \
+    #git show-ref --head | grep "$h" | grep -E "remotes|tags" && echo $? && \
+    #git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$' && echo $? && \
+    #arr1=$(git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$') && echo $? && \
+    arr1=$br && \
     gh_repo_branch="${arr1[*]//\|}" && \
     gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
     gh_repo_branch_regex=$(echo "$gh_repo_branch_regex" | sed -e 's/[]\/$*.^[]/\\\\&/g') && \
     echo "Debug: Repo Branch: $gh_repo_branch" && \
     echo "Debug: Repo Branch Regex: $gh_repo_branch_regex" && \
-    #
     mkdir -p /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     # repo
-    repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}" | jq -r ".id") && \
+    echo "Debug: Repo owner/name: ${gh_repo_owner} / ${gh_repo_name}" && \
+
+#RUN \
+#    set -x && \
+    source /home/jovyan/.conda.init && \
+    conda activate .venv && \
+    repository_id=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo}" | jq -r ".id") && \
     echo "Debug: Repo id: $repository_id" && \
-    artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo_owner}/${gh_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
+    artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_repo}/actions/artifacts?per_page=100&name=${artifact_name}") && \
     artifact_id=$(echo "$artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.repository_id == ${repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
     #download_url="https://nightly.link/${gh_repo_owner}/${gh_repo_name}/actions/artifacts/${artifact_id}.zip" && \
     download_url="https://link-to.alexander-penev.info/${gh_repo_owner}/${gh_repo_name}/actions/artifacts/${artifact_id}.zip" && \
@@ -161,7 +200,7 @@ RUN \
     echo "Debug: Forked Repo id: $f_repository_id" && \
     f_artifacts_info=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts?per_page=100&name=${artifact_name}") && \
     f_artifact_id=$(echo "$f_artifacts_info" | jq -r "[.artifacts[] | select(.expired == false and .workflow_run.repository_id == ${f_repository_id} and (\" \"+.workflow_run.head_branch+\" \" | test(\"${gh_repo_branch_regex}\")))] | sort_by(.updated_at)[-1].id") && \
-    #f_download_url="https://nightly.link/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts/${f_artifact_id}.zip" && \
+    #f_download_url="https://nightly.link/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts/${f_artifact_id}.zip"
     f_download_url="https://link-to.alexander-penev.info/${gh_f_repo_owner}/${gh_f_repo_name}/actions/artifacts/${f_artifact_id}.zip" && \
     # tag
     for download_tag in $gh_repo_branch; do echo "Debug: try tag $download_tag:"; download_tag_url="https://github.com/${gh_repo_owner}/${gh_repo_name}/releases/download/${download_tag}/${artifact_name}.tar.bz2"; if curl --head --silent --fail -L $download_tag_url 1>/dev/null; then echo "found"; break; fi; done && \
@@ -184,7 +223,7 @@ RUN \
     #
     echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
     export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/inst && \
-    export VENV=/home/jovyan/.venv && \
+    export VENV=/opt/conda/venv/.venv && \
     export PATH=$VENV/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
     export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
     echo "export VENV=$VENV" >> ~/.profile && \
@@ -194,8 +233,7 @@ RUN \
     # Build CppInterOp
     #
     sys_incs=$(LC_ALL=C c++ -xc++ -E -v /dev/null 2>&1 | LC_ALL=C sed -ne '/starts here/,/End of/p' | LC_ALL=C sed '/^ /!d' | cut -c2- | tr '\n' ':') && \
-    #export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/../llvm/include:${PATH_TO_LLVM_BUILD}/../clang/include:${PATH_TO_LLVM_BUILD}/include:${PATH_TO_LLVM_BUILD}/tools/clang/include:${sys_incs%:}"
-    export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/include/llvm:${PATH_TO_LLVM_BUILD}/include/clange:${sys_incs%:}" && \
+    export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/include/llvm:${PATH_TO_LLVM_BUILD}/include/clange:$CPLUS_INCLUDE_PATH:${sys_incs%:}" && \
     echo $CPLUS_INCLUDE_PATH && \
     git clone https://github.com/compiler-research/CppInterOp.git && \
     export CB_PYTHON_DIR="$PWD/cppyy-backend/python" && \
@@ -204,9 +242,9 @@ RUN \
     mkdir build && \
     cd build && \
     export CPPINTEROP_BUILD_DIR=$PWD && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR .. && \
+    cmake -DCMAKE_BUILD_TYPE=Debug -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR .. && \
     cmake --build . --parallel $(nproc --all) && \
-    #make install -j$(nproc --all) && \
+    #make install -j$(nproc --all)
     export CPLUS_INCLUDE_PATH="$CPPINTEROP_DIR/include:$CPLUS_INCLUDE_PATH" && \
     export LD_LIBRARY_PATH="${CONDA_DIR}/lib:$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" && \
     echo "export LD_LIBRARY_PATH=$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" >> ~/.profile && \
@@ -220,40 +258,33 @@ RUN \
     # Install CppInterOp
     (cd $CPPINTEROP_BUILD_DIR && cmake --build . --target install --parallel $(nproc --all)) && \
     # Build and Install cppyy-backend
-    cmake -DCppInterOp_DIR=$CPPINTEROP_DIR .. && \
+    cmake -DCMAKE_BUILD_TYPE=Debug -DCppInterOp_DIR=$CPPINTEROP_DIR .. && \
     cmake --build . --parallel $(nproc --all) && \
     cp libcppyy-backend.so $CPPINTEROP_DIR/lib/ && \
     cd ../.. && \
     #
     # Build and Install CPyCppyy
     #
-    # setup virtual environment
-    python3 -m venv .venv && \
-    source $VENV/bin/activate && \
     # Install CPyCppyy
     git clone https://github.com/compiler-research/CPyCppyy.git && \
     cd CPyCppyy && \
     mkdir build && cd build && \
-    cmake .. && \
+    cmake -DCMAKE_BUILD_TYPE=Debug .. && \
     cmake --build . --parallel $(nproc --all) && \
     export CPYCPPYY_DIR=$PWD && \
     cd ../.. && \
     #
     # Build and Install cppyy
     #
-    # source virtual environment
-    source $VENV/bin/activate && \
     # Install cppyy
     git clone https://github.com/compiler-research/cppyy.git && \
     cd cppyy && \
     python -m pip install --upgrade . --no-deps && \
     cd .. && \
     # Run cppyy
-    source $VENV/bin/activate && \
     #TODO: Fix cppyy path (/home/jovyan) to path to installed module
     export PYTHONPATH=$PYTHONPATH:$CPYCPPYY_DIR:$CB_PYTHON_DIR:/home/jovyan && \
     echo "export PYTHONPATH=$PYTHONPATH" >> ~/.profile && \
-    echo "source $VENV/bin/activate" >> ~/.profile && \
     python -c "import cppyy" && \
     #
     # Build and Install xeus-clang-repl
@@ -261,6 +292,8 @@ RUN \
     mkdir build && \
     cd build && \
     export CPLUS_INCLUDE_PATH="/home/jovyan/clad/include:$CPLUS_INCLUDE_PATH" && \
+    echo "export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH" >> ~/.profile && \
+    ##echo "conda activate .venv" >> ~/.profile
     cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
     cd .. && \
@@ -271,13 +304,22 @@ RUN \
     cd clad && \
     mkdir build && \
     cd build && \
-    cmake .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
-    #make -j$(nproc --all) && \
-    make && \
+    cmake -DCMAKE_BUILD_TYPE=Debug .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
+    make -j$(nproc --all) && \
     make install && \
     # install clad in all exist kernels
     for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/clad-xcpp.* ]]; then jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done && \
     #
     # Add OpenMP to all kernels
     #
-    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fopenmp"] | .display_name += " (with OpenMP)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done
+    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fopenmp"] | .display_name += " (with OpenMP)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done && \
+    #
+    # CUDA
+    #
+    #echo "c = get_config()" >> /home/jovyan/.jupyter/jupyter_notebook_config.py && \
+    #echo "c.NotebookApp.notebook_manager_class = 'jupyter_gpu.GPUNotebookManager'" >> /home/jovyan/.jupyter/jupyter_notebook_config.py && \
+    cat /home/jovyan/.jupyter/jupyter_notebook_config.py && \
+    echo "c.GPUNotebookManager.gpu_device = 0" >> /home/jovyan/.jupyter/jupyter_notebook_config.py && \
+    # Web password and token set to ""
+    echo "c.NotebookApp.token = ''" >> /home/jovyan/.jupyter/jupyter_notebook_config.py && \
+    echo "c.NotebookApp.password = ''" >> /home/jovyan/.jupyter/jupyter_notebook_config.py
