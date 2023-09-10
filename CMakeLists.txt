@@ -111,7 +111,8 @@ if(POLICY CMP0077)
 endif()
 
 find_package(cxxopts REQUIRED)
-find_package(PythonLibs REQUIRED)
+set(Python_FIND_VIRTUALENV ONLY)
+find_package(Python COMPONENTS Interpreter Development)
 
 #########
 # flags #
@@ -216,7 +217,7 @@ set_target_properties(xcpp PROPERTIES
   ENABLE_EXPORTS 1
   CXX_STANDARD ${CMAKE_CXX_STANDARD}
 )
-target_link_libraries(xcpp PUBLIC xeus-clang-repl pthread)
+target_link_libraries(xcpp PUBLIC xeus-clang-repl pthread Python::Python)
 
 #TODO: We may be need sse RPATH
 #set_target_properties(xcpp clangCppInterOp PROPERTIES
@@ -266,7 +267,7 @@ elseif(NOT MSVC)
     target_link_libraries(xeus-clang-repl PUBLIC -Wl,--unresolved-symbols=ignore-all)
 endif()
 
-target_include_directories(xeus-clang-repl PUBLIC ${PYTHON_INCLUDE_DIRS})
+target_include_directories(xeus-clang-repl PUBLIC ${Python_INCLUDE_DIRS})
 target_link_libraries(xeus-clang-repl PUBLIC ${PYTHON_LIBRARIES})
 target_link_libraries(xeus-clang-repl ${PYTHON_LIBRARIES_Development_Main})
 set_target_properties(xeus-clang-repl PROPERTIES
