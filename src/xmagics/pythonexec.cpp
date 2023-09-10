@@ -31,6 +31,9 @@ namespace xcpp {
 static PyObject *gMainDict = 0;
 
 void pythonexec::startup() {
+    if (gMainDict)
+        return;
+
     Py_Initialize();
     gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
     Py_INCREF(gMainDict);
