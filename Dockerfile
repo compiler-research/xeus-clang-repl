@@ -189,6 +189,7 @@ RUN \
     export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
     echo "export VENV=$VENV" >> ~/.profile && \
     echo "export PATH=$PATH" >> ~/.profile && \
+    echo "export EDITOR=emacs" >> ~/.profile && \
     #
     # Build CppInterOp
     #
