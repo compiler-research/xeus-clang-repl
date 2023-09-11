@@ -31,14 +31,11 @@ namespace xcpp {
 static PyObject *gMainDict = 0;
 
 void pythonexec::startup() {
-    if (gMainDict)
+    static bool isInitialized = false;
+    if (isInitialized)
         return;
 
     Py_Initialize();
-    gMainDict = PyModule_GetDict(PyImport_AddModule(("__main__")));
-    Py_INCREF(gMainDict);
-    if (!gMainDict)
-      printf("Could not add module __main__");
 
     PyRun_SimpleString("import sys\nprint(sys.path)");
 
@@ -50,19 +47,30 @@ void pythonexec::startup() {
         return; // Handle import error as needed
     }
 
-    // Retrieve the dictionary of cppyy module
-    PyObject* cppyyDict = PyModule_GetDict(cppyyModule);
-    Py_DECREF(cppyyModule);
-    if (!cppyyDict) {
-        PyErr_Print();
-        Py_Finalize();
-        return; // Handle retrieval error as needed
-    }
+    PyObject* mainModule = PyImport_AddModule("__main__");
+    PyObject_SetAttrString(mainModule, "cppyy", cppyyModule);
+    Py_XDECREF(cppyyModule);
+    isInitialized = true;
+    // gMainDict = PyModule_GetDict(mainModule);
+    // Py_INCREF(gMainDict);
+    // if (!gMainDict)
+    //   printf("Could not add module __main__");
 
-    // Add cppyyDict to gMainDict (if needed for further usage)
-    PyDict_Update(gMainDict, cppyyDict);
+    
+    // // Retrieve the dictionary of cppyy module
+    // PyObject* cppyyDict = PyModule_GetDict(cppyyModule);
+    // Py_DECREF(cppyyModule);
+    // if (!cppyyDict) {
+    //     PyErr_Print();
+    //     Py_Finalize();
+    //     return; // Handle retrieval error as needed
+    // }
 
-    Py_DECREF(cppyyDict);
+    // // Add cppyyDict to gMainDict (if needed for further usage)
+    // PyDict_Update(gMainDict, cppyyDict);
+
+    // Py_DECREF(cppyyDict);
+    // PyRun_SimpleString("import cppyy");
 }
 
 xoptions pythonexec::get_options() {
