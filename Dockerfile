@@ -60,8 +60,6 @@ ENV LC_ALL=en_US.UTF-8 \
 
 USER ${NB_UID}
 
-ENV LLVM_REQUIRED_VERSION=16
-
 # Copy git repository to home directory of container
 COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
 
@@ -124,7 +122,6 @@ RUN \
     # notebook, jpyterhub, jupyterlab are inherited from base-notebook container image
     # Other "our" conda installs
     cmake \
-    #"clangdev=$LLVM_REQUIRED_VERSION" \
     'xeus>=2.0,<3.0' \
     'nlohmann_json>=3.9.1,<3.10' \
     'cppzmq>=4.6.0,<5' \
@@ -294,7 +291,7 @@ RUN \
     export CPLUS_INCLUDE_PATH="/home/jovyan/clad/include:$CPLUS_INCLUDE_PATH" && \
     echo "export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH" >> ~/.profile && \
     ##echo "conda activate .venv" >> ~/.profile
-    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
+    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
     cd .. && \
     #
