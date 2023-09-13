@@ -1,0 +1,17 @@
+{
+  "display_name": "C++17 (+OpenMP)",
+  "env": {
+      "CPLUS_INCLUDE_PATH":"@CMAKE_CPLUS_INCLUDE_PATH@",
+      "PATH":"@CMAKE_PATH@",
+      "LD_LIBRARY_PATH":"@CMAKE_LD_LIBRARY_PATH@",
+      "PYTHONPATH":"@CMAKE_PYTHONPATH@"
+  },
+  "argv": [
+      "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
+      "-f",
+      "{connection_file}",
+      "-fopenmp",
+      "-std=c++17"
+  ],
+  "language": "C++17"
+}
