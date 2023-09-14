@@ -80,6 +80,7 @@ configure_kernel("share/jupyter/kernels/xcpp14")
 configure_kernel("share/jupyter/kernels/xcpp17")
 configure_kernel("share/jupyter/kernels/clad-xcpp17")
 configure_kernel("share/jupyter/kernels/cuda-xcpp17")
+configure_kernel("share/jupyter/kernels/omp-xcpp17")
 
 ################
 # Dependencies #
