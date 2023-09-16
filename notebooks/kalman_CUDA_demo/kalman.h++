@@ -42,7 +42,7 @@ public:
   * Update the estimated state based on measured values. The
   * time step is assumed to remain constant.
   */
-  void update(const std::vector<double>& y);
+  std::vector<double> update(const std::vector<double>& y);
 
   /**
   * Update the estimated state based on measured values,
