@@ -1,0 +1,13 @@
+diff --git a/clang/lib/CodeGen/CodeGenModule.cpp b//clang/lib/CodeGen/CodeGenModule.cpp
+index f09d1129b128..82289cba3c12 100644
+--- a/clang/lib/CodeGen/CodeGenModule.cpp
++++ b/clang/lib/CodeGen/CodeGenModule.cpp
+@@ -786,7 +786,7 @@ void CodeGenModule::Release() {
+       AddGlobalCtor(ObjCInitFunction);
+   if (Context.getLangOpts().CUDA && CUDARuntime) {
+     if (llvm::Function *CudaCtorFunction = CUDARuntime->finalizeModule())
+-      AddGlobalCtor(CudaCtorFunction);
++      AddGlobalCtor(CudaCtorFunction, 0);
+   }
+   if (OpenMPRuntime) {
+     if (llvm::Function *OpenMPRequiresDirectiveRegFun =
