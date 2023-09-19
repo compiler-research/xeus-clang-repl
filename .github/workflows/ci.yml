@@ -21,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: ubu22-gcc12-clang16
+          - name: ubu22-gcc12-clang17
             os: ubuntu-22.04
             compiler: gcc-12
-            clang-runtime: '16'
+            clang-runtime: '17'
     steps:
     - uses: actions/checkout@v3
       with:
@@ -188,8 +188,7 @@ jobs:
               -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_DIR=$PATH_TO_LLVM_BUILD \
               -DLLVM_CONFIG_EXTRA_PATH_HINTS=$PATH_TO_LLVM_BUILD \
               -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR \
-              -DLLVM_USE_LINKER=gold \
-              -DLLVM_REQUIRED_VERSION=${{ matrix.clang-runtime }} ..
+              -DLLVM_USE_LINKER=gold ..
         make install
     - name: Setup tmate session
       if: ${{ failure() }}
