@@ -1,5 +1,5 @@
 {
-  "display_name": "C++17",
+  "display_name": "C++17 (+Clad)",
   "env": {
       "CPLUS_INCLUDE_PATH":"@CMAKE_CPLUS_INCLUDE_PATH@",
       "PATH":"@CMAKE_PATH@",
@@ -10,6 +10,7 @@
       "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xcpp",
       "-f",
       "{connection_file}",
+      "-fplugin=/opt/conda/lib/clad.so",
       "-std=c++17"@CMAKE_OMP@
   ],
   "language": "C++17"
