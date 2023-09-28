@@ -32,24 +32,25 @@ RUN \
     set -x && \
     apt-get update --yes && \
     apt-get install --yes --no-install-recommends pciutils && \
-    _CUDA_=$(lspci -nn | grep '\[03' | grep NVIDIA) && \
+    lspci && \
+    export_CUDA_="$(lspci -nn | grep '\[03' | grep NVIDIA)" && \
     apt-get install --yes --no-install-recommends \
-    #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
+      #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
     # Other "our" apt installs
-    unzip \
-    curl \
-    jq \
-    ###libomp-dev \
+      unzip \
+      curl \
+      jq \
+      ###libomp-dev \
     # Other "our" apt installs (development and testing)
-    build-essential \
-    git \
-    nano-tiny \
-    less \
-    gdb valgrind \
-    emacs \
+      build-essential \
+      git \
+      nano-tiny \
+      less \
+      gdb valgrind \
+      emacs \
     # CUDA
-    #cuda \
-    $([ -n "$_CUDA_" ] && echo nvidia-cuda-toolkit) \
+      #cuda \
+      $([ -n "$_CUDA_" ] && echo nvidia-cuda-toolkit) \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
