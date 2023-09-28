@@ -1,6 +1,6 @@
 ### Xeus-Clang-REPL
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/Python-Cpp-Integration-Demo.ipynb)
+Clone the repository locally and execute ./run-docker.sh
 
 ## Description
 
