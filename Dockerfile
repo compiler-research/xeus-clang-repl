@@ -29,6 +29,7 @@ ENV LC_ALL=en_US.UTF-8 \
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
 RUN \
+    set -x && \
     apt-get update --yes && \
     apt-get install --yes --no-install-recommends pciutils && \
     _CUDA_=$(lspci -nn | grep '\[03' | grep NVIDIA) && \
