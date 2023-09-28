@@ -33,7 +33,7 @@ RUN \
     apt-get update --yes && \
     apt-get install --yes --no-install-recommends pciutils && \
     lspci && \
-    export_CUDA_="$(lspci -nn | grep '\[03' | grep NVIDIA)" && \
+    export _CUDA_="$(lspci -nn | grep '\[03' | grep NVIDIA)" && \
     apt-get install --yes --no-install-recommends \
       #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
     # Other "our" apt installs
