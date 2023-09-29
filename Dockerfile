@@ -13,6 +13,8 @@ ARG BASE_TAG=ubuntu-22.04
 ARG BASE_TAG=python-3.10.6
 FROM $BASE_CONTAINER:$BASE_TAG
 
+ARG BUILD_TYPE=Release
+
 LABEL maintainer="Xeus-clang-repl Project"
 #LABEL com.nvidia.volumes.needed="nvidia_driver"
 
@@ -248,7 +250,7 @@ RUN \
     mkdir build && \
     cd build && \
     export CPPINTEROP_BUILD_DIR=$PWD && \
-    cmake -DCMAKE_BUILD_TYPE=Debug -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR .. && \
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR .. && \
     cmake --build . --parallel $(nproc --all) && \
     #make install -j$(nproc --all)
     export CPLUS_INCLUDE_PATH="$CPPINTEROP_DIR/include:$CPLUS_INCLUDE_PATH" && \
@@ -264,7 +266,7 @@ RUN \
     # Install CppInterOp
     (cd $CPPINTEROP_BUILD_DIR && cmake --build . --target install --parallel $(nproc --all)) && \
     # Build and Install cppyy-backend
-    cmake -DCMAKE_BUILD_TYPE=Debug -DCppInterOp_DIR=$CPPINTEROP_DIR .. && \
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCppInterOp_DIR=$CPPINTEROP_DIR .. && \
     cmake --build . --parallel $(nproc --all) && \
     cp libcppyy-backend.so $CPPINTEROP_DIR/lib/ && \
     cd ../.. && \
@@ -275,7 +277,7 @@ RUN \
     git clone https://github.com/compiler-research/CPyCppyy.git && \
     cd CPyCppyy && \
     mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Debug .. && \
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
     cmake --build . --parallel $(nproc --all) && \
     export CPYCPPYY_DIR=$PWD && \
     cd ../.. && \
@@ -303,7 +305,7 @@ RUN \
     cd build && \
     echo "export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH" >> ~/.profile && \
     ##echo "conda activate .venv" >> ~/.profile
-    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_USE_LINKER=gold .. && \
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
     cd .. && \
     #
@@ -313,7 +315,7 @@ RUN \
     cd clad && \
     mkdir build && \
     cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Debug .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
     make -j$(nproc --all) && \
     make install && \
     ### install clad in all exist kernels
