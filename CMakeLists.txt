@@ -94,15 +94,7 @@ find_package(cppzmq REQUIRED CONFIG)
 find_package(pugixml REQUIRED)
 
 #CppInterOp
-#TODO: Make CppInterOp cmake package and use find_package
-#find_package(CppInterOp REQUIRED CONFIG PATHS "${CPPINTEROP_DIR}")
-add_library(clangCppInterOp SHARED IMPORTED)
-set_property(TARGET clangCppInterOp PROPERTY IMPORTED_LOCATION "${CPPINTEROP_DIR}/lib/libclangCppInterOp.so")
-set_property(TARGET clangCppInterOp PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CPPINTEROP_DIR}/../include")
-#
-message(STATUS "CppInterOp Imported location: ${CPPINTEROP_DIR}/lib/libclangCppInterOp.so")
-message(STATUS "CppInterOp include location: ${CPPINTEROP_DIR}/../include")
-
+find_package(CppInterOp REQUIRED CONFIG PATHS "${CPPINTEROP_DIR}" "${CPPINTEROP_DIR}/lib")
 
 ###
 

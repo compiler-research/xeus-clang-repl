@@ -28,7 +28,10 @@ ENV LC_ALL=en_US.UTF-8 \
 
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
-RUN apt-get update --yes && \
+RUN \
+    apt-get update --yes && \
+    apt-get install --yes --no-install-recommends pciutils && \
+    _CUDA_=$(lspci -nn | grep '\[03' | grep NVIDIA) && \
     apt-get install --yes --no-install-recommends \
     #fonts-liberation, pandoc, run-one are inherited from base-notebook container image
     # Other "our" apt installs
@@ -45,7 +48,7 @@ RUN apt-get update --yes && \
     emacs \
     # CUDA
     #cuda \
-    nvidia-cuda-toolkit \
+    $([ -n "$_CUDA_" ] && echo nvidia-cuda-toolkit) \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
@@ -59,8 +62,6 @@ ENV LC_ALL=en_US.UTF-8 \
 #RUN update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 10
 
 USER ${NB_UID}
-
-ENV LLVM_REQUIRED_VERSION=16
 
 # Copy git repository to home directory of container
 COPY --chown=${NB_UID}:${NB_GID} . "${HOME}"/
@@ -129,6 +130,8 @@ RUN \
     'nlohmann_json>=3.9.1,<3.10' \
     'cppzmq>=4.6.0,<5' \
     'xtl>=0.7,<0.8' \
+    'openssl<2' \
+    ipykernel \
     pugixml \
     'cxxopts>=2.2.1,<2.3' \
     libuuid \
@@ -136,6 +139,8 @@ RUN \
     pytest \
     jupyter_kernel_test \
     && \
+    hash -r && \
+    pip install ipython && \
     #rm /home/jovyan/.jupyter/jupyter_notebook_config.py && \
     jupyter notebook --generate-config -y && \
     mamba clean --all -f -y && \
@@ -223,8 +228,8 @@ RUN \
     #
     echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
     export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/inst && \
-    export VENV=/opt/conda/venv/.venv && \
-    export PATH=$VENV/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
+    export VENV=${CONDA_DIR}/envs/.venv && \
+    export PATH=${VENV}/bin:${CONDA_DIR}/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
     export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
     echo "export VENV=$VENV" >> ~/.profile && \
     echo "export PATH=$PATH" >> ~/.profile && \
@@ -234,7 +239,6 @@ RUN \
     #
     sys_incs=$(LC_ALL=C c++ -xc++ -E -v /dev/null 2>&1 | LC_ALL=C sed -ne '/starts here/,/End of/p' | LC_ALL=C sed '/^ /!d' | cut -c2- | tr '\n' ':') && \
     export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/include/llvm:${PATH_TO_LLVM_BUILD}/include/clange:$CPLUS_INCLUDE_PATH:${sys_incs%:}" && \
-    echo $CPLUS_INCLUDE_PATH && \
     git clone https://github.com/compiler-research/CppInterOp.git && \
     export CB_PYTHON_DIR="$PWD/cppyy-backend/python" && \
     export CPPINTEROP_DIR="$CB_PYTHON_DIR/cppyy_backend" && \
@@ -246,7 +250,7 @@ RUN \
     cmake --build . --parallel $(nproc --all) && \
     #make install -j$(nproc --all)
     export CPLUS_INCLUDE_PATH="$CPPINTEROP_DIR/include:$CPLUS_INCLUDE_PATH" && \
-    export LD_LIBRARY_PATH="${CONDA_DIR}/lib:$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" && \
+    export LD_LIBRARY_PATH="${VENV}/lib:${CONDA_DIR}/lib:$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" && \
     echo "export LD_LIBRARY_PATH=$CPPINTEROP_DIR/lib:$LD_LIBRARY_PATH" >> ~/.profile && \
     cd ../.. && \
     #
@@ -285,34 +289,37 @@ RUN \
     #TODO: Fix cppyy path (/home/jovyan) to path to installed module
     export PYTHONPATH=$PYTHONPATH:$CPYCPPYY_DIR:$CB_PYTHON_DIR:/home/jovyan && \
     echo "export PYTHONPATH=$PYTHONPATH" >> ~/.profile && \
+    export CPLUS_INCLUDE_PATH="/home/jovyan/CPyCppyy/include/:$CPLUS_INCLUDE_PATH" && \
+    # FIXME: Remove the hardcoded version of python here.
+    export CPLUS_INCLUDE_PATH="/home/jovyan/clad/include:$CPLUS_INCLUDE_PATH" && \
+    export CPLUS_INCLUDE_PATH="${VENV}/include:${VENV}/include/python3.10:$CPLUS_INCLUDE_PATH" && \
     python -c "import cppyy" && \
     #
     # Build and Install xeus-clang-repl
     #
     mkdir build && \
     cd build && \
-    export CPLUS_INCLUDE_PATH="/home/jovyan/clad/include:$CPLUS_INCLUDE_PATH" && \
     echo "export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH" >> ~/.profile && \
     ##echo "conda activate .venv" >> ~/.profile
-    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_REQUIRED_VERSION=$LLVM_REQUIRED_VERSION -DLLVM_USE_LINKER=gold .. && \
+    cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_CMAKE_DIR=$PATH_TO_LLVM_BUILD -DCMAKE_PREFIX_PATH=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DLLVM_CONFIG_EXTRA_PATH_HINTS=${PATH_TO_LLVM_BUILD}/lib -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR -DLLVM_USE_LINKER=gold .. && \
     make install -j$(nproc --all) && \
     cd .. && \
     #
     # Build and Install Clad
     #
-    ##git clone --depth=1 https://github.com/vgvassilev/clad.git && \
-    ##cd clad && \
-    ##mkdir build && \
-    ##cd build && \
-    ##cmake -DCMAKE_BUILD_TYPE=Debug .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
-    ##make -j$(nproc --all) && \
-    ##make install && \
+    git clone --depth=1 https://github.com/vgvassilev/clad.git && \
+    cd clad && \
+    mkdir build && \
+    cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Debug .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
+    make -j$(nproc --all) && \
+    make install && \
     ### install clad in all exist kernels
     ##for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/clad-xcpp.* ]]; then jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done && \
-    #
-    # Add OpenMP to all kernels
-    #
-    for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fopenmp"] | .display_name += " (with OpenMP)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done && \
+    ###
+    ### Add OpenMP to all kernels
+    ###
+    ##for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/xcpp.* ]]; then jq '.argv += ["-fopenmp"] | .display_name += " (with OpenMP)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done && \
     #
     # CUDA
     #
@@ -322,4 +329,13 @@ RUN \
     echo "c.GPUNotebookManager.gpu_device = 0" >> /home/jovyan/.jupyter/jupyter_notebook_config.py && \
     # Web password and token set to ""
     echo "c.NotebookApp.token = ''" >> /home/jovyan/.jupyter/jupyter_notebook_config.py && \
-    echo "c.NotebookApp.password = ''" >> /home/jovyan/.jupyter/jupyter_notebook_config.py
+    echo "c.NotebookApp.password = ''" >> /home/jovyan/.jupyter/jupyter_notebook_config.py && \
+    # Patch /opt/conda/share/jupyter/kernels/python3/kernel.json to use .venv
+    k="/opt/conda/share/jupyter/kernels/python3/kernel.json" && \
+    jq ".argv[0] = \"${VENV}/bin/python\"" $k > $k.$$.tmp && mv $k.$$.tmp $k && \
+    # xtensor
+    git clone https://github.com/xtensor-stack/xtensor.git && \
+    cd xtensor && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX .. && \
+    make install
