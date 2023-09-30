@@ -1,3 +1,10 @@
+## Try it online
+
+To try out xeus-clang-repl interactively in your web browser, just click on the binder
+link:
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/v0.2.0?labpath=notebooks/index.ipynb)
+
 ### Xeus-Clang-REPL
 
 Clone the repository locally and execute ./run-docker.sh
@@ -68,10 +75,10 @@ cmake ../ -DClang_DIR=/usr/lib/llvm-15/build/lib/cmake/clang\
 make -j n
 ```
 
-## Try it online
+## Try it online (for developers)
 
 To try out xeus-clang-repl interactively in your web browser, just click on the binder
-link:
+link (Warning! This is Nightly build):
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/index.ipynb)
 
