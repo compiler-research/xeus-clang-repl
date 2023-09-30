@@ -75,12 +75,11 @@ function(configure_kernel kernel)
     endforeach()
 endfunction()
 
-configure_kernel("share/jupyter/kernels/xcpp11")
-configure_kernel("share/jupyter/kernels/xcpp14")
-configure_kernel("share/jupyter/kernels/xcpp17")
-configure_kernel("share/jupyter/kernels/clad-xcpp17")
-configure_kernel("share/jupyter/kernels/cuda-xcpp17")
-configure_kernel("share/jupyter/kernels/omp-xcpp17")
+file(GLOB _kernels LIST_DIRECTORIES true RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "share/jupyter/kernels/*")
+foreach(_kernel IN LISTS _kernels)
+  message("Configure kernel: ${_kernel}")
+  configure_kernel("${_kernel}")
+endforeach()
 
 ################
 # Dependencies #
