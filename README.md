@@ -73,7 +73,7 @@ make -j n
 To try out xeus-clang-repl interactively in your web browser, just click on the binder
 link:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/Python-Cpp-Integration-Demo.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/compiler-research/xeus-clang-repl/HEAD?labpath=notebooks/index.ipynb)
 
 
 <img
