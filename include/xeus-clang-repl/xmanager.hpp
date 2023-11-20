@@ -20,6 +20,7 @@
 
 #include "nlohmann/json.hpp"
 
+#include <iostream>
 #include <map>
 #include <memory>
 #include <regex>

@@ -7,8 +7,6 @@ link:
 
 ### Xeus-Clang-REPL
 
-Clone the repository locally and execute ./run-docker.sh
-
 ## Description
 
 `xeus-clang-repl` integrates clang-repl with the xeus protocol and is a platform for C++ usage in Jupyter Notebooks. The demo developed in this repository shows a Python - CPP integraton in Jupyter Notebooks, where variables can be transfered between Python and CPP.
@@ -26,7 +24,7 @@ fresh environment. It is also needed to use a
 You will first need to install dependencies
 
 ```bash
-mamba install cmake cxx-compiler nlohmann_json cppzmq xtl jupyterlab clangdev=14 cxxopts pugixml -c conda-forge
+mamba install xeus xeus-zmq cmake cxx-compiler nlohmann_json cppzmq xtl jupyterlab clangdev=14 cxxopts pugixml -c conda-forge
 ```
 
 **Note:** Use a mamba environment with python version >= 3.11 for fetching clang-versions
@@ -47,9 +45,9 @@ mamba install`xeus-clang-repl` notebook -c conda-forge
 ``` -->
 
 ```bash
-git clone https://github.com/llvm/llvm-project
+git clone --depth=1 --branch release/15.0x https://github.com/llvm/llvm-project
 
-git checkout -b release/15.0x
+cd llvm-project
 
 git apply patches/llvm/clang15-D127284.patch
 
@@ -74,6 +72,18 @@ cmake ../ -DClang_DIR=/usr/lib/llvm-15/build/lib/cmake/clang\
 
 make -j n
 ```
+
+## Docker
+It is possible to build xeus-clang-repl within a Docker container. On an arm based Apple machine with docker, docker-compose and colima installed, you can try out xeus-clang-repl using the following commands (cpu represents number of cores, and memory is in GiB, so adjust according to your machine)
+```bash
+git clone https://github.com/compiler-research/xeus-clang-repl.git
+cd xeus-clang-repl
+colima start --cpu 8 --memory 8 --arch aarch64 --vm-type=vz --vz-rosetta
+chmod a+x ./build-and-run-docker.sh
+./build-and-run-docker.sh
+```
+Once the bash script finishes running, you can experiment with xeus-clang-repl by opening up your browser and visiting http://127.0.0.1:8888/lab
+
 
 ## Try it online (for developers)
 
