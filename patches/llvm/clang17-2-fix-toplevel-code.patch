@@ -1,0 +1,77 @@
+diff --git a/clang/include/clang/AST/Decl.h b/clang/include/clang/AST/Decl.h
+index cd0878d70825..7b1d9e8be6c5 100644
+--- a/clang/include/clang/AST/Decl.h
++++ b/clang/include/clang/AST/Decl.h
+@@ -4440,7 +4440,8 @@ class TopLevelStmtDecl : public Decl {
+   virtual void anchor();
+ 
+ public:
+-  static TopLevelStmtDecl *Create(ASTContext &C, Stmt *Statement);
++  static TopLevelStmtDecl *Create(ASTContext &C, DeclContext *DC,
++                                  Stmt *Statement);
+   static TopLevelStmtDecl *CreateDeserialized(ASTContext &C, unsigned ID);
+ 
+   SourceRange getSourceRange() const override LLVM_READONLY;
+diff --git a/clang/lib/AST/Decl.cpp b/clang/lib/AST/Decl.cpp
+index 527ea6042daa..5c0f4f5b6b4c 100644
+--- a/clang/lib/AST/Decl.cpp
++++ b/clang/lib/AST/Decl.cpp
+@@ -5513,13 +5513,13 @@ FileScopeAsmDecl *FileScopeAsmDecl::CreateDeserialized(ASTContext &C,
+ 
+ void TopLevelStmtDecl::anchor() {}
+ 
+-TopLevelStmtDecl *TopLevelStmtDecl::Create(ASTContext &C, Stmt *Statement) {
++TopLevelStmtDecl *TopLevelStmtDecl::Create(ASTContext &C, DeclContext *DC,
++                                           Stmt *Statement) {
+   assert(Statement);
+   assert(C.getLangOpts().IncrementalExtensions &&
+          "Must be used only in incremental mode");
+ 
+   SourceLocation BeginLoc = Statement->getBeginLoc();
+-  DeclContext *DC = C.getTranslationUnitDecl();
+ 
+   return new (C, DC) TopLevelStmtDecl(DC, BeginLoc, Statement);
+ }
+diff --git a/clang/lib/Interpreter/IncrementalParser.cpp b/clang/lib/Interpreter/IncrementalParser.cpp
+index 370bcbfee8b0..366610abecb0 100644
+--- a/clang/lib/Interpreter/IncrementalParser.cpp
++++ b/clang/lib/Interpreter/IncrementalParser.cpp
+@@ -373,8 +373,22 @@ std::unique_ptr<llvm::Module> IncrementalParser::GenModule() {
+ 
+ void IncrementalParser::CleanUpPTU(PartialTranslationUnit &PTU) {
+   TranslationUnitDecl *MostRecentTU = PTU.TUPart;
++  if (!MostRecentTU) {
++    return;
++  }
++
+   TranslationUnitDecl *FirstTU = MostRecentTU->getFirstDecl();
+-  if (StoredDeclsMap *Map = FirstTU->getPrimaryContext()->getLookupPtr()) {
++  if (!FirstTU) {
++    return;
++  }
++
++  SmallVector<DeclContext *> contexts;
++  FirstTU->collectAllContexts(contexts);
++  if (contexts.empty()) {
++    return;
++  }
++
++  if (StoredDeclsMap *Map = contexts.back()->getLookupPtr()) {
+     for (auto I = Map->begin(); I != Map->end(); ++I) {
+       StoredDeclsList &List = I->second;
+       DeclContextLookupResult R = List.getLookupResult();
+diff --git a/clang/lib/Sema/SemaDecl.cpp b/clang/lib/Sema/SemaDecl.cpp
+index be6a136ef37b..f78fada57f62 100644
+--- a/clang/lib/Sema/SemaDecl.cpp
++++ b/clang/lib/Sema/SemaDecl.cpp
+@@ -20287,8 +20287,8 @@ Decl *Sema::ActOnFileScopeAsmDecl(Expr *expr,
+ }
+ 
+ Decl *Sema::ActOnTopLevelStmtDecl(Stmt *Statement) {
+-  auto *New = TopLevelStmtDecl::Create(Context, Statement);
+-  Context.getTranslationUnitDecl()->addDecl(New);
++  auto *New = TopLevelStmtDecl::Create(Context, CurContext, Statement);
++  CurContext->addDecl(New);
+   return New;
+ }
+ 
