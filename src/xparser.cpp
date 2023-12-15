@@ -64,14 +64,14 @@ std::vector<SplitBlock> split_from_includes(const std::string &input) {
   std::regex incl_re("\\#include.*");
   std::regex magic_re("^\\%\\w+");
   std::vector<SplitBlock> result;
-  result.emplace_back(false, "");
+  result.push_back({false, ""});
   std::size_t current = 0; // 0 include, 1 other
   std::size_t rindex = 0;  // current index of result vector
   for (std::size_t i = 0; i < lines.size(); ++i) {
     if (!lines[i].empty()) {
       if (std::regex_search(lines[i], magic_re)) {
-        result.emplace_back(false, lines[i] + "\n");
-        result.emplace_back(false, "");
+        result.push_back({false, lines[i] + "\n"});
+        result.push_back({false, ""});
         rindex += 2;
       } else {
         if (std::regex_match(lines[i], incl_re)) {
@@ -80,7 +80,7 @@ std::vector<SplitBlock> split_from_includes(const std::string &input) {
           // other things
           if (current != 0) {
             current = 0;
-            result.emplace_back(false, "");
+            result.push_back({false, ""});
             rindex++;
           }
         } else {
@@ -89,13 +89,13 @@ std::vector<SplitBlock> split_from_includes(const std::string &input) {
           // the include parts
           if (current != 1) {
             current = 1;
-            result.emplace_back(false, "");
+            result.push_back({false, ""});
             rindex++;
           }
         }
         // if we have multiple lines, we add a semicolon at the end of the lines
         // that not contain #include keyword (except for the last line)
-        result[rindex].is_include = true;
+        result[rindex].is_include = (current == 0);
         result[rindex].code += lines[i];
         if (i != lines.size() - 1) {
           result[rindex].code += "\n";
