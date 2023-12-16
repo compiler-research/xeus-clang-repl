@@ -14,7 +14,7 @@
 
 #include "xeus/xkernel.hpp"
 #include "xeus/xkernel_configuration.hpp"
-#include "xeus/xserver_zmq.hpp"
+#include "xeus-zmq/xserver_zmq.hpp"
 
 #include "xeus-clang-repl/xeus_clang-repl_config.hpp"
 #include "xeus-clang-repl/xinterpreter.hpp"

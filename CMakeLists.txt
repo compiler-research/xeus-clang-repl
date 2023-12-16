@@ -89,6 +89,7 @@ set(xeus_REQUIRED_VERSION 1.0.0)
 set(cppzmq_REQUIRED_VERSION 4.3.0)
 
 find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
+find_package(xeus-zmq  REQUIRED) 
 find_package(cppzmq REQUIRED CONFIG)
 find_package(pugixml REQUIRED)
 
@@ -103,6 +104,10 @@ if(POLICY CMP0077)
 endif()
 
 find_package(cxxopts REQUIRED)
+
+# Added as system unable to locate cxxopts include folder on MacOS without
+include_directories(${cxxopts_DIR}/../include/)
+
 set(Python_FIND_VIRTUALENV ONLY)
 find_package(Python COMPONENTS Interpreter Development)
 
@@ -251,7 +256,7 @@ target_include_directories(xeus-clang-repl SYSTEM
                            PUBLIC
                            $<BUILD_INTERFACE:${XEUS_CLANG-REPL_INCLUDE_DIR}>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(xeus-clang-repl PUBLIC clangCppInterOp xeus pugixml cxxopts::cxxopts)
+target_link_libraries(xeus-clang-repl PUBLIC clangCppInterOp xeus xeus-zmq pugixml)
 
 if(APPLE)
     target_link_libraries(xeus-clang-repl PUBLIC -Wl,-w -Wl,-bind_at_load -Wl,-undefined,dynamic_lookup)

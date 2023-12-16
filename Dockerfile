@@ -45,6 +45,9 @@ RUN \
       ###libomp-dev \
     # Other "our" apt installs (development and testing)
       build-essential \
+      #FIXME: Update to clang-17 once available in apt repository (expected with next LTS version of Ubuntu April 2024)
+      #       to be use a consistent version of clang throughout
+      clang-15 \
       git \
       nano-tiny \
       less \
@@ -54,7 +57,9 @@ RUN \
       #cuda \
       $([ -n "$_CUDA_" ] && echo nvidia-cuda-toolkit) \
     && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    apt-get clean &&  \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen
 
@@ -130,13 +135,16 @@ RUN \
     # Other "our" conda installs
     cmake \
     #"clangdev=$LLVM_REQUIRED_VERSION" \
-    'xeus>=2.0,<3.0' \
+    'xeus>=2.0' \
+    xeus-zmq \
     'nlohmann_json>=3.9.1,<3.10' \
     'cppzmq>=4.6.0,<5' \
     'xtl>=0.7,<0.8' \
-    'openssl<2' \
+    'openssl<4' \
     ipykernel \
     pugixml \
+    zlib \
+    libxml2 \
     'cxxopts>=2.2.1,<2.3' \
     libuuid \
     # Test dependencies
@@ -159,6 +167,9 @@ RUN \
     set -x && \
     source /home/jovyan/.conda.init && \
     conda activate .venv && \
+    export ARCHITECHURE=$(uname -m) && \
+    if [ "$ARCHITECHURE" == "x86_64" ] ; \ 
+    then \
     #
     artifact_name="clang-dev" && \
     #
@@ -167,9 +178,10 @@ RUN \
     echo $PWD && git_remote_origin_url=$(git config --get remote.origin.url) && \
     echo "Debug: Remote origin url: $git_remote_origin_url" && \
     arr=(${git_remote_origin_url//\// }) && \
-    gh_repo_owner=${arr[2]} && \
+    arr2=(${arr[0]//:/ }) && \
+    gh_repo_owner=${arr2[1]} && \
     gh_f_repo_owner="compiler-research" && \
-    arr=(${arr[3]//./ }) && \
+    arr=(${arr[1]//./ }) && \
     gh_repo_name=${arr[0]} && \
     gh_repo="${gh_repo_owner}/${gh_repo_name}" && \
     gh_f_repo_name=${gh_repo_name} && \
@@ -193,7 +205,6 @@ RUN \
     pushd /home/runner/work/xeus-clang-repl/xeus-clang-repl && \
     # repo
     echo "Debug: Repo owner/name: ${gh_repo_owner} / ${gh_repo_name}" && \
-
 #RUN \
 #    set -x && \
     source /home/jovyan/.conda.init && \
@@ -231,26 +242,48 @@ RUN \
     popd && \
     #
     echo "Debug clang path: $PATH_TO_CLANG_DEV" && \
-    export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/inst && \
+    export PATH_TO_LLVM_BUILD=$PATH_TO_CLANG_DEV/inst/ && \
+    export PATH_TO_LLVM_CONFIG=$PATH_TO_CLANG_DEV/inst/lib/cmake/llvm/ && \
+    export PATH_TO_CLANG_CONFIG=$PATH_TO_CLANG_DEV/inst/lib/cmake/clang/ ; \
+    fi  && \
     export VENV=${CONDA_DIR}/envs/.venv && \
-    export PATH=${VENV}/bin:${CONDA_DIR}/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
-    export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
     echo "export VENV=$VENV" >> ~/.profile && \
-    echo "export PATH=$PATH" >> ~/.profile && \
     echo "export EDITOR=emacs" >> ~/.profile && \
     #
-    # Build CppInterOp
-    #
+    # Build LLVM (if on arm) & CppInterOp 
+    #  
     sys_incs=$(LC_ALL=C c++ -xc++ -E -v /dev/null 2>&1 | LC_ALL=C sed -ne '/starts here/,/End of/p' | LC_ALL=C sed '/^ /!d' | cut -c2- | tr '\n' ':') && \
     export CPLUS_INCLUDE_PATH="${PATH_TO_LLVM_BUILD}/include/llvm:${PATH_TO_LLVM_BUILD}/include/clange:$CPLUS_INCLUDE_PATH:${sys_incs%:}" && \
     git clone https://github.com/compiler-research/CppInterOp.git && \
+    if [ "$ARCHITECHURE" == "aarch64" ] ; \ 
+    then \
+    #FIXME: Update to clang-17 once clang-17 is available in apt repository (expected with next LTS version of Ubuntu 
+    #       around April 2024)
+    export CC=/usr/bin/clang-15 && \
+    export CXX=/usr/bin/clang++-15 && \
+    #FIXME: Currently build with version 16.x on arm due to issue mentioned here https://github.com/compiler-research/xeus-clang-repl/issues/78
+	git clone  --depth=1 --branch release/16.x  https://github.com/llvm/llvm-project.git && \
+	cd ./llvm-project/ && \
+	mkdir build && \
+	export LLVM_DIR=$(pwd) && \
+    compgen -G "../CppInterOp/patches/llvm/clang16-*.patch" > /dev/null && find ../CppInterOp/patches/llvm/clang16-*.patch -printf "%f\n" && git apply ../CppInterOp/patches/llvm/clang16-*.patch && \
+    cd build && \
+    cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD="host;NVPTX" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_USE_LINKER=gold -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_FORMAT=OFF -DCLANG_ENABLE_BOOTSTRAP=OFF ../llvm && \
+    cmake --build . --target clang clang-repl --parallel $(nproc --all) && \
+    export PATH_TO_LLVM_CONFIG=$LLVM_DIR/build/lib/cmake/llvm/ && \
+    export PATH_TO_CLANG_CONFIG=$LLVM_DIR/build/lib/cmake/clang/ && \
+    export PATH_TO_LLVM_BUILD=$LLVM_DIR/build && \
+    cd ../../ ; \
+    fi && \
+    export PATH=${VENV}/bin:${CONDA_DIR}/bin:$PATH_TO_LLVM_BUILD/bin:$PATH && \
+    export LD_LIBRARY_PATH=$PATH_TO_LLVM_BUILD/lib:$LD_LIBRARY_PATH && \
+    echo "export PATH=$PATH" >> ~/.profile && \
     export CB_PYTHON_DIR="$PWD/cppyy-backend/python" && \
     export CPPINTEROP_DIR="$CB_PYTHON_DIR/cppyy_backend" && \
-    cd CppInterOp && \
-    mkdir build && \
-    cd build && \
+    mkdir CppInterOp/build && \
+    cd CppInterOp/build && \
     export CPPINTEROP_BUILD_DIR=$PWD && \
-    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_BUILD -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR .. && \
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_CLING=OFF -DUSE_REPL=ON -DLLVM_DIR=$PATH_TO_LLVM_CONFIG -DClang_DIR=$PATH_TO_CLANG_CONFIG -DLLVM_USE_LINKER=gold -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$CPPINTEROP_DIR .. && \
     cmake --build . --parallel $(nproc --all) && \
     #make install -j$(nproc --all)
     export CPLUS_INCLUDE_PATH="$CPPINTEROP_DIR/include:$CPLUS_INCLUDE_PATH" && \
@@ -260,9 +293,10 @@ RUN \
     #
     # Build and Install cppyy-backend
     #
-    git clone https://github.com/compiler-research/cppyy-backend.git && \
+    git clone --depth=1 https://github.com/compiler-research/cppyy-backend.git && \
     cd cppyy-backend && \
-    mkdir -p $CPPINTEROP_DIR/lib build && cd build && \
+    mkdir -p $CPPINTEROP_DIR/lib build && \
+    cd build && \
     # Install CppInterOp
     (cd $CPPINTEROP_BUILD_DIR && cmake --build . --target install --parallel $(nproc --all)) && \
     # Build and Install cppyy-backend
@@ -274,9 +308,9 @@ RUN \
     # Build and Install CPyCppyy
     #
     # Install CPyCppyy
-    git clone https://github.com/compiler-research/CPyCppyy.git && \
-    cd CPyCppyy && \
-    mkdir build && cd build && \
+    git clone --depth=1 https://github.com/compiler-research/CPyCppyy.git && \
+    mkdir CPyCppyy/build && \
+    cd CPyCppyy/build  && \
     cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
     cmake --build . --parallel $(nproc --all) && \
     export CPYCPPYY_DIR=$PWD && \
@@ -285,7 +319,7 @@ RUN \
     # Build and Install cppyy
     #
     # Install cppyy
-    git clone https://github.com/compiler-research/cppyy.git && \
+    git clone --depth=1 https://github.com/compiler-research/cppyy.git && \
     cd cppyy && \
     python -m pip install --upgrade . --no-deps && \
     cd .. && \
@@ -294,9 +328,9 @@ RUN \
     export PYTHONPATH=$PYTHONPATH:$CPYCPPYY_DIR:$CB_PYTHON_DIR:/home/jovyan && \
     echo "export PYTHONPATH=$PYTHONPATH" >> ~/.profile && \
     export CPLUS_INCLUDE_PATH="/home/jovyan/CPyCppyy/include/:$CPLUS_INCLUDE_PATH" && \
-    # FIXME: Remove the hardcoded version of python here.
+    export PYTHON_VERSION=$(python --version | cut -c8- | cut -f1,2 -d'.') && \
     export CPLUS_INCLUDE_PATH="/home/jovyan/clad/include:$CPLUS_INCLUDE_PATH" && \
-    export CPLUS_INCLUDE_PATH="${VENV}/include:${VENV}/include/python3.10:$CPLUS_INCLUDE_PATH" && \
+    export CPLUS_INCLUDE_PATH="${VENV}/include:${VENV}/include/python${PYTHON_VERSION}:$CPLUS_INCLUDE_PATH" && \
     python -c "import cppyy" && \
     #
     # Build and Install xeus-clang-repl
@@ -312,13 +346,11 @@ RUN \
     # Build and Install Clad
     #
     git clone --depth=1 https://github.com/vgvassilev/clad.git && \
-    cd clad && \
-    mkdir build && \
-    cd build && \
-    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. -DClang_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/clang/ -DLLVM_DIR=${PATH_TO_LLVM_BUILD}/lib/cmake/llvm/ -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
-    #make -j$(nproc --all) && \
-    make && \
-    make install && \
+    mkdir clad/build && \
+    cd clad/build && \
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. -DClang_DIR=$PATH_TO_CLANG_CONFIG -DLLVM_DIR=$PATH_TO_LLVM_CONFIG -DCMAKE_INSTALL_PREFIX=${CONDA_DIR} -DLLVM_EXTERNAL_LIT="$(which lit)" && \
+    make -j$(nproc --all) && \
+    make install -j$(nproc --all) && \
     ### install clad in all exist kernels
     ##for i in "$KERNEL_PYTHON_PREFIX"/share/jupyter/kernels/*; do if [[ $i =~ .*/clad-xcpp.* ]]; then jq '.argv += ["-fplugin=$KERNEL_PYTHON_PREFIX/lib/clad.so"] | .display_name += " (with clad)"' "$i"/kernel.json > tmp.$$.json && mv tmp.$$.json "$i"/kernel.json; fi; done && \
     ###
@@ -339,8 +371,8 @@ RUN \
     k="/opt/conda/share/jupyter/kernels/python3/kernel.json" && \
     jq ".argv[0] = \"${VENV}/bin/python\"" $k > $k.$$.tmp && mv $k.$$.tmp $k && \
     # xtensor
-    git clone https://github.com/xtensor-stack/xtensor.git && \
-    cd xtensor && \
-    mkdir build && cd build && \
+    git clone --depth=1 https://github.com/xtensor-stack/xtensor.git && \
+    mkdir xtensor/build && \
+    cd xtensor/build && \
     cmake -DCMAKE_INSTALL_PREFIX=$KERNEL_PYTHON_PREFIX .. && \
-    make install
+    make install -j$(nproc --all)

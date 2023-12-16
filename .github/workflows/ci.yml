@@ -136,10 +136,12 @@ jobs:
         #
         conda update --all
         conda install -y -q -c conda-forge \
-          'xeus>=2.0,<3.0' \
+          'xeus>=2.0' \
+          xeus-zmq \
           'nlohmann_json>=3.9.1,<3.10' \
           'cppzmq>=4.6.0,<5' \
           'xtl>=0.7,<0.8' \
+          'openssl<4' \
           pugixml \
           'cxxopts>=2.2.1,<2.3' \
           libuuid \
