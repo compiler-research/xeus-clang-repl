@@ -15,62 +15,86 @@ link:
 
 ## Installation
 
+xeus-clang-repl has not been packaged for the mamba (or conda) package manager.
+
 To ensure that the installation works, it is preferable to install `xeus-clang-repl` in a
 fresh environment. It is also needed to use a
 [miniforge](https://github.com/conda-forge/miniforge#mambaforge) or
 [miniconda](https://conda.io/miniconda.html) installation because with the full
-[anaconda](https://www.anaconda.com/) you may have a conflict with the zeromq library 
+[anaconda](https://www.anaconda.com/) you may have a conflict with the `zeromq` library
+which is already installed in the anaconda distribution.
 
-You will first need to install dependencies
-
+First clone the repository, and move into that directory
 ```bash
-mamba install xeus xeus-zmq cmake cxx-compiler nlohmann_json cppzmq xtl jupyterlab clangdev=14 cxxopts pugixml -c conda-forge
+git clone --depth=1 https://github.com/compiler-research/xeus-clang-repl.git
+cd ./xeus-clang-repl
 ```
-
-**Note:** Use a mamba environment with python version >= 3.11 for fetching clang-versions
-
-The safest usage is to create an environment named `xeus-clang-repl`
-
+The safest usage of xeus-clang-repl is to build and install it within a clean environment named `xeus-cpp`. You can create and activate this environment 
+with mamba by executing the following
 ```bash
-mamba create -n  `xeus-clang-repl`
-source activate  `xeus-clang-repl`
+mamba create -n "xeus-clang-repl" python=3.10.6
+mamba activate "xeus-clang-repl"
 ```
-
-<!-- ### Installing from conda-forge
-
-Then you can install in this environment `xeus-clang-repl` and its dependencies
-
+We will now install the dependencies needed to compile xeus-clang-repl from source within this environment by executing the following
 ```bash
-mamba install`xeus-clang-repl` notebook -c conda-forge
-``` -->
-
+mamba install --quiet --yes -c conda-forge \
+                               cmake \
+                              'xeus>=2.0' \
+                              xeus-zmq \
+                              'nlohmann_json>=3.9.1,<3.10' \
+                              'cppzmq>=4.6.0,<5' \
+                              'xtl>=0.7,<0.8' \
+                              'openssl<4' \
+                              ipykernel \
+                              pugixml \
+                              zlib \
+                              libxml2 \
+                              'cxxopts>=2.2.1,<2.3' \
+                              libuuid \
+                              pytest \
+                              jupyter_kernel_test 
+mamba install -y jupyter
+```
+We are now in a position to be able to install xeus-clang-repl by executing the following
 ```bash
-git clone --depth=1 --branch release/15.0x https://github.com/llvm/llvm-project
-
+git clone --depth=1 https://github.com/compiler-research/xeus-clang-repl.git
+git clone --depth=1 -b release/17.x https://github.com/llvm/llvm-project.git
 cd llvm-project
-
-git apply patches/llvm/clang15-D127284.patch
-
+git apply -v ../xeus-clang-repl/patches/llvm/clang17-*.patch
 mkdir build
-
 cd build
-
-cmake -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ../llvm
-
-make -j n
-
-cd ..
-
-git clone https://github.com/compiler-research/xeus-clang-repl.git
-
+cmake -DLLVM_ENABLE_PROJECTS=clang                  \
+      -DLLVM_TARGETS_TO_BUILD="host;NVPTX"          \
+      -DCMAKE_BUILD_TYPE=Release                    \
+      -DLLVM_ENABLE_ASSERTIONS=ON                   \
+      -DLLVM_ENABLE_LLD=ON                          \
+      -DCLANG_ENABLE_STATIC_ANALYZER=OFF            \
+      -DCLANG_ENABLE_ARCMT=OFF                      \
+      -DCLANG_ENABLE_FORMAT=OFF                     \
+      -DCLANG_ENABLE_BOOTSTRAP=OFF                  \
+      ../llvm
+cmake --build . --target clang clang-repl --parallel $(nproc --all)
+LLVM_BUILD_DIR=$PWD
+cd ../..
+git clone --depth=1 https://github.com/compiler-research/CppInterOp.git
+mkdir CppInterOp/build
+cd  CppInterOp/build
+cmake -DBUILD_SHARED_LIBS=ON -DUSE_CLING=Off -DUSE_REPL=ON -DLLVM_DIR=$LLVM_DIR/build/lib/cmake/llvm -DClang_DIR=$LLVM_DIR/build/lib/cmake/clang ..
+cmake --build . --parallel $(nproc --all)
+CPPINTEROP_BUILD_DIR=$PWD
+cd ../../xeus-clang-repl
 mkdir build
-
 cd build
-
-cmake ../ -DClang_DIR=/usr/lib/llvm-15/build/lib/cmake/clang\
-         -DLLVM_DIR=/usr/lib/llvm-15/build/lib/cmake/llvm
-
-make -j n
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DLLVM_CMAKE_DIR=$LLVM_BUILD_DIR \
+      -DCMAKE_PREFIX_PATH=$(conda info --base) \
+      -DCMAKE_INSTALL_PREFIX=$(conda info --base) \
+      -DCMAKE_INSTALL_LIBDIR=lib \
+      -DLLVM_CONFIG_EXTRA_PATH_HINTS=$LLVM_BUILD_DIR/lib \
+      -DCPPINTEROP_DIR=$CPPINTEROP_BUILD_DIR \
+      -DLLVM_USE_LINKER=lld  \
+      .. 
+cmake --build . --target install --parallel $(nproc --all)
 ```
 
 ## Docker
