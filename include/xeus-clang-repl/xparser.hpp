@@ -26,7 +26,12 @@ std::vector<std::string> split_line(const std::string &input,
 
 std::vector<std::string> get_lines(const std::string &input);
 
-std::vector<std::string> split_from_includes(const std::string &input);
+struct SplitBlock {
+    bool is_include;
+    std::string code;
+};
+
+std::vector<SplitBlock> split_from_includes(const std::string &input);
 
 bool short_has_arg(const std::string &opt, const std::string &short_opts);
 
