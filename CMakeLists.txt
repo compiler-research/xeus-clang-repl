@@ -214,7 +214,7 @@ set_target_properties(xcpp PROPERTIES
   ENABLE_EXPORTS 1
   CXX_STANDARD ${CMAKE_CXX_STANDARD}
 )
-target_link_libraries(xcpp PUBLIC xeus-clang-repl pthread Python::Python)
+target_link_libraries(xcpp PRIVATE xeus-clang-repl pthread Python::Python)
 
 #TODO: We may be need sse RPATH
 #set_target_properties(xcpp clangCppInterOp PROPERTIES
