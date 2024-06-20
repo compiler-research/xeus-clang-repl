@@ -64,7 +64,26 @@ interpreter::interpreter(int argc, const char *const *argv)
 
 interpreter::~interpreter() { restore_output(); }
 
-nl::json interpreter::execute_request_impl(int /*execution_counter*/,
+
+std::string namespace_name(int namespace_number) {
+  const std::string NAMESPACE_PREFIX = "__xns";
+  return NAMESPACE_PREFIX + std::to_string(namespace_number);
+}
+
+std::string namespace_full_name(int namespace_number) {
+  std::string result;
+  for (int i = 1; i < namespace_number; ++i) {
+    result += namespace_name(i) + "::";
+  }
+  result += namespace_name(namespace_number);
+  return result;
+}
+
+std::string encapsulate_code(const std::string &code, int namespace_number) {
+  return "\nnamespace " + namespace_full_name(namespace_number) + " {" + code + "}";
+}
+
+nl::json interpreter::execute_request_impl(int execution_counter,
                                            const std::string &code, bool silent,
                                            bool /*store_history*/,
                                            nl::json /*user_expressions*/,
@@ -110,7 +129,12 @@ nl::json interpreter::execute_request_impl(int /*execution_counter*/,
     try {
       Cpp::BeginStdStreamCapture(Cpp::kStdErr);
       Cpp::BeginStdStreamCapture(Cpp::kStdOut);
-      compilation_result = Cpp::Process(block.c_str());
+      if (block.is_include) {
+        compilation_result = Cpp::Process(block.code.c_str());
+      } else {
+        std::string encapsulated = encapsulate_code(block.code, execution_counter);
+        compilation_result = Cpp::Process(encapsulated.c_str());
+      }
       out = Cpp::EndStdStreamCapture();
       err = Cpp::EndStdStreamCapture();
       std::cout << out;
