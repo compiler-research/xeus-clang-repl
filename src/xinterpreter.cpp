@@ -46,7 +46,12 @@ void* createInterpreter(const Args &ExtraArgs = {}) {
 }
 
 namespace xcpp {
-void interpreter::configure_impl() {}
+
+void interpreter::configure_impl()
+{
+    xeus::register_interpreter(this);
+}
+
 
 interpreter::interpreter(int argc, const char *const *argv)
     : //          m_input_validator(),
