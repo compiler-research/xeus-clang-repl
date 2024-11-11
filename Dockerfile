@@ -187,15 +187,12 @@ RUN \
     gh_f_repo_name=${gh_repo_name} && \
     h=$(git rev-parse HEAD) && \
     echo "Debug: Head h: $h" && \
-    br=$(git rev-parse --abbrev-ref HEAD) && \
-    echo "Debug: Branch br: $br" && \
     #FIXME: if `$h` is not pushed upstream this fails. We should just diagnose and move on.
-    #git show-ref --head && echo $? && \
-    #git show-ref --head | grep "$h" && echo $? && \
-    #git show-ref --head | grep "$h" | grep -E "remotes|tags" && echo $? && \
-    #git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$' && echo $? && \
-    #arr1=$(git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$') && echo $? && \
-    arr1=$br && \
+    git show-ref --head && echo $? && \
+    git show-ref --head | grep "$h" && echo $? && \
+    git show-ref --head | grep "$h" | grep -E "remotes|tags" && echo $? && \
+    git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$' && echo $? && \
+    arr1=$(git show-ref --head | grep "$h" | grep -E "remotes|tags" | grep -o '[^/ ]*$') && echo $? && \
     gh_repo_branch="${arr1[*]//\|}" && \
     gh_repo_branch_regex=" ${gh_repo_branch//$'\n'/ | } " && \
     gh_repo_branch_regex=$(echo "$gh_repo_branch_regex" | sed -e 's/[]\/$*.^[]/\\\\&/g') && \
